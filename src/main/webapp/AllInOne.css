@@ -127,3 +127,11 @@ div.text-color-red textarea{
 .simplePanelClass {
     background-color: #15428B;
 }
+
+.add-session-button {
+
+}
+
+.start-button {
+  border-radius: 20%;
+}
