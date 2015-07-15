@@ -24,7 +24,7 @@ public class AddSessionDialog extends Composite{
     okButton.addClickHandler(new ClickHandler() {
       public void onClick(ClickEvent event) {
         if (!clientNameTextBox.getValue().isEmpty()) {
-          RootPanel.get("mainPanel").add(new ClientSessionPanel(new Client(clientNameTextBox.getValue(), clientNameTextBox.getValue())));
+//          RootPanel.get("mainPanel").add(new ClientSessionPanel(new Client(clientNameTextBox.getValue(), clientNameTextBox.getValue())));
         }
       }
     });

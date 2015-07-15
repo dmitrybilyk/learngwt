@@ -129,9 +129,129 @@ div.text-color-red textarea{
 }
 
 .add-session-button {
-
+    border-radius: 8%;
+    font-size: 33px !important;
+    height: 76px;
+    margin: 20px 20px 20px 555px !important;
+    width: 333px;
 }
 
 .start-button {
-  border-radius: 20%;
+    border-radius: 20%;
+    font-size: 16px !important;
+    margin-left: 5px !important;
+    margin-right: 5px !important;
+}
+
+.stop-button {
+    border-radius: 20%;
+    margin-right: 3px;
+}
+
+.remove-button {
+    border-radius: 20%;
+}
+
+.main-panel-style {
+    padding-left: 10px;
+    padding-right: 10px;
+    text-align: center;
+    vertical-align: middle;
+    background-color: #800000;
+}
+
+.left-time-label {
+    color:#ffffff;
+    font-size: 15px;
+    text-align: center;
+    width: 100px;
+}
+
+.name-label {
+    background-color: #FFDEAD;
+    border: 1px solid;
+    border-radius: 17%;
+    padding: 5px;
+}
+
+.custom-input {
+    /*margin: 9px 5px 5px;*/
+}
+
+.remind-input {
+    color: #17385b;
+    text-align: center;
+    width: 52px !important;
+}
+
+.custom-checkbox {
+    /*margin: 16px 5px 5px;*/
+    /*vertical-align: middle;*/
+}
+
+.total-time-style {
+    background-color: #FFA500;
+    border: 1px solid;
+    border-radius: 10%;
+    font-size: 15px;
+    padding: 5px;
+}
+
+body {
+    background: whitesmoke;
+}
+
+.session-panel {
+    background-color: whitesmoke;
+    border-radius: 10%;
+    border:solid 2px;
+    padding: 5px;
+    margin: 5px;
+}
+
+.total-sum {
+    background-color: #FFA500;
+    border: 1px solid;
+    border-radius: 10%;
+    font-size: 15px;
+    padding: 5px;
+}
+
+.per-minute-style {
+    background-color: green;
+}
+
+.logout-button-style {
+    margin: 10px !important;
+    color: blue !important;
+
+}
+
+.vertical-login-panel td{
+    width: 100%;
+    text-align: center;
+}
+
+
+
+.login-message {
+    text-align: center;
+    color: #ffffff;
+}
+
+.login-input {
+    text-align: center;
+    color: #000000;
+}
+
+.top-panel {
+    text-align: center;
+}
+
+.first-admin-style {
+    background-color: #3CC59C;
+}
+
+.second-admin-style {
+    background-color: #3366cc;
 }

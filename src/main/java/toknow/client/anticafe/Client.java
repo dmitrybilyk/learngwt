@@ -1,15 +1,20 @@
 package toknow.client.anticafe;
 
+import java.io.Serializable;
+
 /**
  * Created by dmitry on 11.07.15.
  */
-public class Client {
+public class Client implements Serializable{
   private String name;
   private String comment;
 
   public Client(String name, String comment) {
     this.name = name;
     this.comment = comment;
+  }
+
+  public Client() {
   }
 
   public String getName() {

@@ -5,34 +5,43 @@
 http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd"
          version="2.5">
 
+    <servlet>
+        <servlet-name>clientsServlet</servlet-name>
+        <servlet-class>toknow.server.anticafe.ClientsServiceImpl</servlet-class>
+    </servlet>
 
-  <!-- Servlets -->
-  <!--<servlet>-->
+    <servlet-mapping>
+        <servlet-name>clientsServlet</servlet-name>
+        <url-pattern>/AllInOne/clientsService</url-pattern>
+    </servlet-mapping>
+
+    <!-- Servlets -->
+    <!--<servlet>-->
     <!--<servlet-name>greetServlet</servlet-name>-->
     <!--<servlet-class>toknow.server.GreetingServiceImpl</servlet-class>-->
-  <!--</servlet>-->
+    <!--</servlet>-->
 
-  <!--<servlet-mapping>-->
+    <!--<servlet-mapping>-->
     <!--<servlet-name>greetServlet</servlet-name>-->
     <!--<url-pattern>/AllInOne/greet</url-pattern>-->
-  <!--</servlet-mapping>-->
+    <!--</servlet-mapping>-->
 
 
     <!--<servlet>-->
-        <!--<servlet-name>CreateNewTodo</servlet-name>-->
-        <!--<servlet-class>toknow.server.ServletCreateTodo</servlet-class>-->
+    <!--<servlet-name>CreateNewTodo</servlet-name>-->
+    <!--<servlet-class>toknow.server.ServletCreateTodo</servlet-class>-->
     <!--</servlet>-->
     <!--<servlet>-->
-        <!--<servlet-name>RemoveTodo</servlet-name>-->
-        <!--<servlet-class>toknow.server.ServletRemoveTodo</servlet-class>-->
+    <!--<servlet-name>RemoveTodo</servlet-name>-->
+    <!--<servlet-class>toknow.server.ServletRemoveTodo</servlet-class>-->
     <!--</servlet>-->
     <!--<servlet-mapping>-->
-        <!--<servlet-name>RemoveTodo</servlet-name>-->
-        <!--<url-pattern>/done</url-pattern>-->
+    <!--<servlet-name>RemoveTodo</servlet-name>-->
+    <!--<url-pattern>/done</url-pattern>-->
     <!--</servlet-mapping>-->
     <!--<servlet-mapping>-->
-        <!--<servlet-name>CreateNewTodo</servlet-name>-->
-        <!--<url-pattern>/new</url-pattern>-->
+    <!--<servlet-name>CreateNewTodo</servlet-name>-->
+    <!--<url-pattern>/new</url-pattern>-->
     <!--</servlet-mapping>-->
 
     <servlet>
