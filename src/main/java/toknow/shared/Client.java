@@ -13,14 +13,18 @@ public class Client implements Serializable{
   private long totalTime;
   private long totalSum;
   private boolean isFirstAdmin;
+  private boolean isInProgress;
+  private long limitTime = 1000 * 60 * 60 * 5;
 
-  public Client(boolean isFirstAdmin, long id, String name, String comment, long totalTime, long totalSum) {
+  public Client(boolean isInProgress, boolean isFirstAdmin, long id, String name, String comment, long totalTime, long totalSum) {
+    this.isInProgress = isInProgress;
     this.isFirstAdmin = isFirstAdmin;
     this.id = id;
     this.name = name;
     this.comment = comment;
     this.totalTime = totalTime;
     this.totalSum = totalSum;
+
   }
 
   public Client() {
@@ -66,4 +70,27 @@ public class Client implements Serializable{
     this.totalSum = totalSum;
   }
 
+  public boolean isFirstAdmin() {
+    return isFirstAdmin;
+  }
+
+  public void setFirstAdmin(boolean isFirstAdmin) {
+    this.isFirstAdmin = isFirstAdmin;
+  }
+
+  public boolean isInProgress() {
+    return isInProgress;
+  }
+
+  public void setInProgress(boolean isInProgress) {
+    this.isInProgress = isInProgress;
+  }
+
+  public long getLimitTime() {
+    return limitTime;
+  }
+
+  public void setLimitTime(long limitTime) {
+    this.limitTime = limitTime;
+  }
 }

@@ -9,6 +9,7 @@ import com.google.gwt.event.dom.client.KeyPressEvent;
 import com.google.gwt.event.dom.client.KeyPressHandler;
 import com.google.gwt.event.logical.shared.ValueChangeEvent;
 import com.google.gwt.event.logical.shared.ValueChangeHandler;
+import com.google.gwt.media.client.Audio;
 import com.google.gwt.user.client.Timer;
 import com.google.gwt.user.client.rpc.AsyncCallback;
 import com.google.gwt.user.client.ui.*;
@@ -37,10 +38,13 @@ public class ClientSessionPanel extends Composite {
     this.clientId = clientId;
   }
 
+  private Audio notificationEmailAudio;
+
   private long clientId;
   private HorizontalPanel mainPanel;
   private Label clientNameLabel;
-  private TextBox clientNameInput;
+  private ListBox clientNameInput;
+//  private TextBox clientNameInput;
   private Label commentLabel;
   private TextBox clientCommentInput;
   private CheckBox remindAfterCheckBox;
@@ -72,6 +76,10 @@ public class ClientSessionPanel extends Composite {
   private long currentTimeValue;
   private long totalSumCurrentValue;
 
+  public long getTotalSumCurrentValue() {
+    return totalSumCurrentValue;
+  }
+
   private boolean isFirstAdmin;
 
   public boolean isFirstAdmin() {
@@ -79,6 +87,8 @@ public class ClientSessionPanel extends Composite {
   }
 
   public ClientSessionPanel(final boolean isFirstAdmin, long id, String name, String comment, long totalTime, long totalSum) {
+    notificationEmailAudio = Audio.createIfSupported();
+    notificationEmailAudio.setSrc("sounds/email_notification.wav");
     this.isFirstAdmin = isFirstAdmin;
     this.clientId = id;
     mainPanel = new HorizontalPanel();
@@ -91,10 +101,14 @@ public class ClientSessionPanel extends Composite {
     clientNameLabel.addStyleName("name-label");
     mainPanel.add(clientNameLabel);
 
-    clientNameInput = new TextBox();
+    clientNameInput = new ListBox();
     clientNameInput.setWidth("150px");
     clientNameInput.addStyleName("custom-input");
-    clientNameInput.setText(name);
+    clientNameInput.addItem("Выберите имя");
+//    clientNameInput.setSeValue(0, "Выберите имя");
+    clientNameInput.addItem("Моцарт");
+    clientNameInput.addItem("Бах");
+    clientNameInput.addItem("Билык");
 //    clientNameInput.getElement().getStyle().setBackgroundColor("blue");
     mainPanel.add(clientNameInput);
 
@@ -163,8 +177,9 @@ public class ClientSessionPanel extends Composite {
 
     startSessionButton.addClickHandler(new ClickHandler() {
       public void onClick(ClickEvent event) {
-        clientsServiceAsync.addClient(isFirstAdmin, 0, clientNameInput.getValue(), clientCommentInput.getValue(),
-                currentTimeValue, totalSumCurrentValue , new AsyncCallback<Long>() {
+        startTime = System.currentTimeMillis();
+        clientsServiceAsync.addClient(isFirstAdmin, 0, clientNameInput.getValue(clientNameInput.getSelectedIndex()), clientCommentInput.getValue(),
+                startTime, totalSumCurrentValue , new AsyncCallback<Long>() {
                   public void onFailure(Throwable caught) {
                     // Show the RPC error message to the user
                     String s = "dfd";
@@ -174,7 +189,7 @@ public class ClientSessionPanel extends Composite {
                     clientId = result;
                   }
                 });
-        startTime = System.currentTimeMillis();
+
         finishTime = startTime + Long.valueOf(remindAfterInput.getValue()) * 1000;
 
         remindTimeTimer = new Timer() {
@@ -184,6 +199,7 @@ public class ClientSessionPanel extends Composite {
             if (timeLeft > 0) {
               remindAfterInput.setText(getMinutesString(timeLeft));
             } else {
+              notificationEmailAudio.play();
               remindAfterInput.setText("ALERT");
               remindAfterInput.getElement().getStyle().setBackgroundColor("red");
               remindTimeTimer.cancel();
@@ -205,9 +221,9 @@ public class ClientSessionPanel extends Composite {
               totalSumValue.setText(getPrettyMoney(minPayment));
             } else {
               if ((seconds - minTime / 1000) % 60 == 0) {
-                BigDecimal totalSum = new BigDecimal(totalSumValue.getText()).add(new BigDecimal("0.50"));
-                totalSumCurrentValue = totalSum.longValue() * 100;
-                totalSumValue.setText(totalSum.toString());
+                BigDecimal totalSum = BigDecimal.valueOf(totalSumCurrentValue + 50);
+                totalSumCurrentValue = totalSum.longValue();
+                totalSumValue.setText(getPrettyMoney(totalSum.longValue()));
               }
             }
           }

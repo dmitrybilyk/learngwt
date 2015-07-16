@@ -3,10 +3,12 @@ package toknow.client.anticafe;
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.event.dom.client.ClickHandler;
+import com.google.gwt.user.client.Timer;
 import com.google.gwt.user.client.rpc.AsyncCallback;
 import com.google.gwt.user.client.ui.*;
 import toknow.shared.Client;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -20,6 +22,7 @@ public class MainPanel extends Composite {
   private TextBox userNameInput;
   private TextBox passwordInput;
   private Button loginButton;
+  private Label totalSumLabel = new Label();
 
 
 
@@ -60,7 +63,24 @@ public class MainPanel extends Composite {
     addClientSessionButton.setVisible(false);
 
     horizontalPanel.add(addClientSessionButton);
+    horizontalPanel.add(totalSumLabel);
 
+    Timer updateTotalSumTimer = new Timer() {
+      @Override
+      public void run() {
+        long totalSum = 0;
+        Iterator<Widget> vPanelWidgets = sessionsPanel.iterator();
+        while (vPanelWidgets.hasNext()){
+          Widget childWidget = vPanelWidgets.next();
+          if (childWidget instanceof ClientSessionPanel) {
+
+            totalSum += ((ClientSessionPanel) childWidget).getTotalSumCurrentValue();
+          }
+        }
+        totalSumLabel.setText(getPrettyMoney(totalSum));
+      }
+    };
+    updateTotalSumTimer.scheduleRepeating(1000);
 
     verticalLoginPanel = new VerticalPanel();
 
@@ -171,7 +191,7 @@ public class MainPanel extends Composite {
 
       public void onSuccess(ArrayList<Client> result) {
         for (Client client: result) {
-          verticalPanel.add(new ClientSessionPanel(MainPanel.this.getStyleName().contains("first-admin-style"), client.getId(), client.getName(), client.getComment(),
+          verticalPanel.add(new ClientSessionPanel(verticalPanel.getStyleName().contains("first-admin-style"), client.getId(), client.getName(), client.getComment(),
                   client.getTotalTime(), client.getTotalSum()));
         }
       }
@@ -188,6 +208,9 @@ public class MainPanel extends Composite {
     return clientSessionPanelList;
   }
 
+  private String getPrettyMoney(long minPayment) {
+    return new BigDecimal(minPayment).divide(new BigDecimal("100")).setScale(2, BigDecimal.ROUND_HALF_UP).toString();
+  }
 
 
 }

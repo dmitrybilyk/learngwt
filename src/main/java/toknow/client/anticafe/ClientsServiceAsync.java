@@ -9,7 +9,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 
 public interface ClientsServiceAsync {
-  void addClient(boolean isFirstAdmin, long id, String name, String comment, long totalTime, long totalSum, AsyncCallback<Long> async);
+  void addClient(boolean isFirstAdmin, long id, String name, String comment, long startTime, long totalSum, AsyncCallback<Long> async);
   void addSession(long id, String name, String comment, long totalTime, long totalSum, AsyncCallback<Void> async);
   void updateSession(long id, String name, String comment, long totalTime, long totalSum, AsyncCallback<Void> async);
 

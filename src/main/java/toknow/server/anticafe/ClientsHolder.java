@@ -2,23 +2,27 @@ package toknow.server.anticafe;
 
 import toknow.shared.Client;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Created by dmitry on 13.07.15.
  */
 public class ClientsHolder {
   public ClientsHolder() {
-    clientMap.put(getClientId(), new Client(true, getClientId(), "first name", "first comment", 1000, 1000));
+//    Timer timer = new Timer();
+//    timer.schedule(new TimerTask() {
+//      @Override
+//      public void run() {
+//        // Your database code here
+//      }
+//    }, 2*60*1000);
+//    clientMap.put(getClientId(), new Client(true, true, getClientId(), "first name", "first comment", 1000, 1000));
   }
 
   private Map<Long, Client> clientMap = new LinkedHashMap<Long, Client>();
-  public Long addClient(boolean isFirstAdmin, long id, String name, String comment, long time, long sum) {
+  public Long addClient(boolean isFirstAdmin, long id, String name, String comment, long startTime, long sum) {
     long nextId = getClientId();
-    clientMap.put(nextId, new Client(isFirstAdmin, nextId, name, comment, time, sum));
+    clientMap.put(nextId, new Client(true, isFirstAdmin, nextId, name, comment, startTime, sum));
     return nextId;
   }
 

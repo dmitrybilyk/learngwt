@@ -17,9 +17,9 @@ public class ClientsServiceImpl extends RemoteServiceServlet implements ClientsS
 
   private ClientsHolder holder = new ClientsHolder();
 
-  public Long addClient(boolean isFirstAdmin, long id, String name, String comment, long totalTime, long totalSum) {
+  public Long addClient(boolean isFirstAdmin, long id, String name, String comment, long startTime, long totalSum) {
 //    sendNotificationEmail(id, name, comment, totalTime, totalSum);
-    return holder.addClient(isFirstAdmin, id, name, comment, totalTime, totalSum);
+    return holder.addClient(isFirstAdmin, id, name, comment, startTime, totalSum);
   }
 
   private void sendNotificationEmail(long id, String name, String comment, long totalTime, long totalSum) {
