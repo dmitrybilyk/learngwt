@@ -20,4 +20,8 @@ public interface ClientsService extends RemoteService{
   void sendCompleteNotification(long id, String name, String comment, long totalTime, long totalSum);
 
   void updateSessionOwner(long id, boolean isSuperAdmin, boolean isFirstAdmin, boolean isSecondAdmin);
+
+  void stopSession(long id);
+
+  void acceptSession(long id);
 }

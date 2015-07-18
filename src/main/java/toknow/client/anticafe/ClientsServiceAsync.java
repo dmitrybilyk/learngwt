@@ -17,6 +17,8 @@ public interface ClientsServiceAsync {
   void getClients(AsyncCallback<ArrayList<toknow.shared.Client>> async);
 
   void removeSession(long id, AsyncCallback<Void> async);
+  void acceptSession(long id, AsyncCallback<Void> async);
+  void stopSession(long id, AsyncCallback<Void> async);
 
   void sendCompleteNotification(long id, String name, String comment, long totalTime, long totalSum, AsyncCallback<Void> async);
 }

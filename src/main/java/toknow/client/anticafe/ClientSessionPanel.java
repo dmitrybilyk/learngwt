@@ -86,11 +86,16 @@ public class ClientSessionPanel extends Composite {
   private boolean isSecondAdmin;
   private boolean isSuperAdmin;
 
+  private boolean isInProgress;
+  private boolean isAccepted;
+
   public boolean isFirstAdmin() {
     return isFirstAdmin;
   }
 
-  public ClientSessionPanel(final boolean isSuperAdmin, final boolean isFirstAdmin, final boolean isSecondAdmin, long id, String name, String comment, long totalTime, long totalSum) {
+  public ClientSessionPanel(final boolean isSuperAdmin, final boolean isFirstAdmin, final boolean isSecondAdmin, long id, String name, String comment, final long startTime, long totalSum) {
+
+
     notificationEmailAudio = Audio.createIfSupported();
     notificationEmailAudio.setSrc("sounds/email_notification.wav");
     this.isFirstAdmin = isFirstAdmin;
@@ -157,6 +162,20 @@ public class ClientSessionPanel extends Composite {
     clientNameInput.addItem("Моцарт");
     clientNameInput.addItem("Бах");
     clientNameInput.addItem("Билык");
+//    int foundIndex = 0;
+    for (int i = 0; i < clientNameInput.getItemCount(); i++) {
+      if(clientNameInput.getItemText(i).equals(name)) {
+        clientNameInput.setSelectedIndex(i);
+      }
+    }
+
+    if (isSuperAdmin) {
+      whoseBox.setSelectedIndex(2);
+    } else if (isFirstAdmin) {
+      whoseBox.setSelectedIndex(0);
+    } else if (isSecondAdmin) {
+      whoseBox.setSelectedIndex(1);
+    }
 //    clientNameInput.getElement().getStyle().setBackgroundColor("blue");
     mainPanel.add(clientNameInput);
 
@@ -227,20 +246,24 @@ public class ClientSessionPanel extends Composite {
 
     startSessionButton.addClickHandler(new ClickHandler() {
       public void onClick(ClickEvent event) {
-        startTime = System.currentTimeMillis();
-        clientsServiceAsync.addClient(isSuperAdmin, isFirstAdmin, isSecondAdmin, 0, clientNameInput.getValue(clientNameInput.getSelectedIndex()), clientCommentInput.getValue(),
-                startTime, totalSumCurrentValue , new AsyncCallback<Long>() {
-                  public void onFailure(Throwable caught) {
-                    // Show the RPC error message to the user
-                    String s = "dfd";
-                  }
 
-                  public void onSuccess(Long result) {
-                    clientId = result;
-                  }
-                });
+        if (clientId == 0) {
+          ClientSessionPanel.this.startTime = System.currentTimeMillis();
+          clientsServiceAsync.addClient(isSuperAdmin, isFirstAdmin, isSecondAdmin, 0, clientNameInput.getValue(clientNameInput.getSelectedIndex()), clientCommentInput.getValue(),
+                  ClientSessionPanel.this.startTime, totalSumCurrentValue , new AsyncCallback<Long>() {
+                    public void onFailure(Throwable caught) {
+                      // Show the RPC error message to the user
+                      String s = "dfd";
+                    }
 
-        finishTime = startTime + Long.valueOf(remindAfterInput.getValue()) * 1000;
+                    public void onSuccess(Long result) {
+                      clientId = result;
+                    }
+                  });
+        }
+
+
+        finishTime = ClientSessionPanel.this.startTime + Long.valueOf(remindAfterInput.getValue()) * 1000;
 
         remindTimeTimer = new Timer() {
           @Override
@@ -260,30 +283,38 @@ public class ClientSessionPanel extends Composite {
           remindTimeTimer.scheduleRepeating(1000);
         }
 
-        refreshTotalSumTimer = new Timer() {
-          @Override
-          public void run() {
-            currentTimeValue = System.currentTimeMillis() - startTime;
-            totalTimeValue.setText(getMinutesString(currentTimeValue));
-            long seconds = getSeconds(currentTimeValue);
-            if (seconds <= getSeconds(minTime)) {
-              totalSumCurrentValue = minPayment;
-              totalSumValue.setText(getPrettyMoney(minPayment));
-            } else {
-              if ((seconds - minTime / 1000) % 60 == 0) {
-                BigDecimal totalSum = BigDecimal.valueOf(totalSumCurrentValue + 50);
-                totalSumCurrentValue = totalSum.longValue();
-                totalSumValue.setText(getPrettyMoney(totalSum.longValue()));
-              }
-            }
-          }
-        };
         refreshTotalSumTimer.scheduleRepeating(1000);
-
       }
     });
-
     createTotalSumSection();
+
+    this.startTime = startTime;
+    refreshTotalSumTimer = new Timer() {
+      @Override
+      public void run() {
+        updateTotalSum(totalTimeValue);
+      }
+    };
+    if (clientId != 0) {
+      currentTimeValue = System.currentTimeMillis() - this.startTime;
+      totalTimeValue.setText(getMinutesString(currentTimeValue));
+      long currentIntervalSeconds = getSeconds(currentTimeValue);
+      if (currentIntervalSeconds <= getSeconds(minTime)) {
+//          totalSumCurrentValue = minPayment;
+        totalSumValue.setText(getPrettyMoney(minPayment));
+        totalSumCurrentValue = minPayment;
+      } else {
+
+//            BigDecimal totalSum = BigDecimal.valueOf(totalSumCurrentValue + 50);
+//            totalSumCurrentValue = totalSum.longValue();
+          totalSum = minPayment + 50 * (currentIntervalSeconds - minTime / 1000) / 60;
+          totalSumCurrentValue = totalSum;
+          totalSumValue.setText(getPrettyMoney(totalSum));
+      }
+      refreshTotalSumTimer.scheduleRepeating(1000);
+    }
+
+
 
     mainPanel.add(startSessionButton);
     stopTheSessionButton = new Button();
@@ -291,8 +322,16 @@ public class ClientSessionPanel extends Composite {
     stopTheSessionButton.setTitle("Стоп");
     stopTheSessionButton.addClickHandler(new ClickHandler() {
       public void onClick(ClickEvent event) {
-        remindTimeTimer.cancel();
-        refreshTotalSumTimer.cancel();
+        clientsServiceAsync.stopSession(clientId, new AsyncCallback<Void>() {
+          public void onFailure(Throwable caught) {
+            String s = "sdfsd";
+          }
+
+          public void onSuccess(Void result) {
+            stopSession();
+          }
+        });
+
       }
     });
     mainPanel.add(stopTheSessionButton);
@@ -302,7 +341,7 @@ public class ClientSessionPanel extends Composite {
     closeTheSessionButton.setTitle("В архив");
     closeTheSessionButton.addClickHandler(new ClickHandler() {
       public void onClick(ClickEvent event) {
-        clientsServiceAsync.removeSession(clientId, new AsyncCallback<Void>() {
+        clientsServiceAsync.acceptSession(clientId, new AsyncCallback<Void>() {
           public void onFailure(Throwable caught) {
             String s = "dfd";
           }
@@ -316,6 +355,31 @@ public class ClientSessionPanel extends Composite {
       }
     });
     mainPanel.add(closeTheSessionButton);
+  }
+
+  public void stopSession() {
+    remindTimeTimer.cancel();
+    refreshTotalSumTimer.cancel();
+  }
+
+  private void updateTotalSum(Label totalTimeValue) {
+    currentTimeValue = System.currentTimeMillis() - this.startTime;
+    totalTimeValue.setText(getMinutesString(currentTimeValue));
+    long currentIntervalSeconds = getSeconds(currentTimeValue);
+    if (currentIntervalSeconds <= getSeconds(minTime)) {
+//          totalSumCurrentValue = minPayment;
+      totalSumValue.setText(getPrettyMoney(minPayment));
+      totalSumCurrentValue = minPayment;
+    } else {
+      if ((currentIntervalSeconds - minTime / 1000) % 60 == 0) {
+
+//            BigDecimal totalSum = BigDecimal.valueOf(totalSumCurrentValue + 50);
+//            totalSumCurrentValue = totalSum.longValue();
+        long totalSum = minPayment + 50 * (currentIntervalSeconds - minTime / 1000) / 60;
+        totalSumCurrentValue = totalSum;
+        totalSumValue.setText(getPrettyMoney(totalSum));
+      }
+    }
   }
 
   private void createTotalSumSection() {

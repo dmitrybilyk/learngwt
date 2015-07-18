@@ -22,6 +22,7 @@ public class MainPanel extends Composite {
   private TextBox userNameInput;
   private TextBox passwordInput;
   private Button loginButton;
+  final VerticalPanel sessionsPanel;
   private CheckBox isShowAccepted = new CheckBox("Показывать завершенные");
   private Label totalSumLabel = new Label();
 
@@ -33,14 +34,15 @@ public class MainPanel extends Composite {
   private final ClientsServiceAsync clientsServiceAsync = GWT.create(ClientsService.class);
 
   public MainPanel() {
-    addFirstClientToCheck();
+//    addFirstClientToCheck();
 
 
     HorizontalPanel horizontalPanel = new HorizontalPanel();
     horizontalPanel.addStyleName("top-panel");
     horizontalPanel.setWidth("100%");
 
-    final VerticalPanel sessionsPanel = new VerticalPanel();
+    sessionsPanel = new VerticalPanel();
+    sessionsPanel.setVisible(false);
     getExistingSessions();
 
     addClientSessionButton = new Button("Добавить сессию");
@@ -55,6 +57,39 @@ public class MainPanel extends Composite {
 
       }
     });
+
+    Timer updateCurrentStateTimer = new Timer() {
+      @Override
+      public void run() {
+        clientsServiceAsync.getClients(new AsyncCallback<ArrayList<Client>>() {
+          public void onFailure(Throwable caught) {
+            String s = "fdsf";
+          }
+
+          public void onSuccess(ArrayList<Client> result) {
+            for (Client client: result) {
+              Iterator<Widget> vPanelWidgets = sessionsPanel.iterator();
+              while (vPanelWidgets.hasNext()) {
+                Widget childWidget = vPanelWidgets.next();
+                if (childWidget instanceof ClientSessionPanel) {
+                  if (client.getId() == ((ClientSessionPanel) childWidget).getClientId()) {
+                    if (!client.isInProgress()) {
+                      ((ClientSessionPanel) childWidget).stopSession();
+                    }
+                    if (client.isAccepted()) {
+                      ((ClientSessionPanel) childWidget).setVisible(false);
+                    }
+                  }
+
+                }
+              }
+            }
+
+          }
+        });
+      }
+    };
+    updateCurrentStateTimer.scheduleRepeating(5000);
 
     verticalPanel = new VerticalPanel();
     initWidget(verticalPanel);
@@ -190,6 +225,22 @@ public class MainPanel extends Composite {
 
   }
 
+  private void addSessionToUser(Client client, boolean isCurrentlyFirst, boolean isCurrentlySecond, boolean isCurrentlyAdmin, VerticalPanel sessionsPanel) {
+    if (isCurrentlyFirst) {
+      sessionsPanel.add(new ClientSessionPanel(client.isSuperAdmin(), client.isFirstAdmin(), client.isSecondAdmin(),
+              client.getId(), client.getName(), client.getComment(), client.getTotalTime(), client.getTotalSum() ));
+    } else if (isCurrentlySecond){
+      sessionsPanel.add(new ClientSessionPanel(client.isSuperAdmin(), client.isFirstAdmin(), client.isSecondAdmin(),
+              client.getId(), client.getName(), client.getComment(), client.getTotalTime(), client.getTotalSum() ));
+    } else if (isCurrentlyAdmin) {
+      sessionsPanel.add(new ClientSessionPanel(client.isSuperAdmin(), client.isFirstAdmin(), client.isSecondAdmin(),
+              client.getId(), client.getName(), client.getComment(), client.getTotalTime(), client.getTotalSum() ));
+    } else {
+      sessionsPanel.add(new ClientSessionPanel(client.isSuperAdmin(), client.isFirstAdmin(), client.isSecondAdmin(),
+              client.getId(), client.getName(), client.getComment(), client.getTotalTime(), client.getTotalSum() ));
+    }
+  }
+
   private void addSessionToUser(boolean isCurrentlyFirst, boolean isCurrentlySecond, boolean isCurrentlyAdmin, VerticalPanel sessionsPanel) {
     if (isCurrentlyFirst) {
       sessionsPanel.add(new ClientSessionPanel(false, true, false, 0, "", "", 0, 0 ));
@@ -236,7 +287,7 @@ public class MainPanel extends Composite {
   }
 
   private void addFirstClientToCheck() {
-    clientsServiceAsync.addClient(false, true, false, 0, "first name", "first comment", 1000, 1000, new AsyncCallback<Long>() {
+    clientsServiceAsync.addClient(false, true, false, 0, "Бах", "test comment", System.currentTimeMillis(), 1000, new AsyncCallback<Long>() {
       public void onFailure(Throwable caught) {
         String s = "dfd";
       }
@@ -258,13 +309,13 @@ public class MainPanel extends Composite {
         boolean isCurrentlySecond = verticalPanel.getStyleName().contains("second-admin-style");
         boolean isCurrentlyAdmin = verticalPanel.getStyleName().contains("super-admin-style");
         for (Client client: result) {
-          verticalPanel.insert(new ClientSessionPanel(verticalPanel.getStyleName().contains("super-admin-style"),
-                  verticalPanel.getStyleName().contains("first-admin-style"),
-                  verticalPanel.getStyleName().contains("second-admin-style"),
-                  client.getId(), client.getName(), client.getComment(),
-                  client.getTotalTime(), client.getTotalSum()), 1);
+//          verticalPanel.insert(new ClientSessionPanel(verticalPanel.getStyleName().contains("super-admin-style"),
+//                  verticalPanel.getStyleName().contains("first-admin-style"),
+//                  verticalPanel.getStyleName().contains("second-admin-style"),
+//                  client.getId(), client.getName(), client.getComment(),
+//                  client.getTotalTime(), client.getTotalSum()), 1);
 
-          addSessionToUser(isCurrentlyFirst, isCurrentlySecond, isCurrentlyAdmin, verticalPanel);
+          addSessionToUser(client, client.isFirstAdmin(), client.isSecondAdmin(), client.isSuperAdmin(), sessionsPanel);
         }
       }
     });

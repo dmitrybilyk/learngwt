@@ -90,4 +90,12 @@ public class ClientsServiceImpl extends RemoteServiceServlet implements ClientsS
     client.setSuperAdmin(isSuperAdmin);
   }
 
+  public void stopSession(long id) {
+    holder.getClientById(id).setInProgress(false);
+  }
+
+  public void acceptSession(long id) {
+    holder.getClientById(id).setAccepted(true);
+  }
+
 }
