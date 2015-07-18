@@ -1,19 +1,17 @@
 package toknow.client.anticafe;
 
 
-import com.extjs.gxt.ui.client.widget.MessageBox;
 import com.google.gwt.core.client.GWT;
+import com.google.gwt.event.dom.client.ChangeEvent;
+import com.google.gwt.event.dom.client.ChangeHandler;
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.event.dom.client.ClickHandler;
-import com.google.gwt.event.dom.client.KeyPressEvent;
-import com.google.gwt.event.dom.client.KeyPressHandler;
 import com.google.gwt.event.logical.shared.ValueChangeEvent;
 import com.google.gwt.event.logical.shared.ValueChangeHandler;
 import com.google.gwt.media.client.Audio;
 import com.google.gwt.user.client.Timer;
 import com.google.gwt.user.client.rpc.AsyncCallback;
 import com.google.gwt.user.client.ui.*;
-import toknow.server.anticafe.*;
 
 import java.math.BigDecimal;
 
@@ -22,6 +20,8 @@ import java.math.BigDecimal;
  * Created by dmitry on 11.07.15.
  */
 public class ClientSessionPanel extends Composite {
+
+//  private boolean superAdmin;
 //  public ClientSessionPanel(long id, String name, String comment, long totalTime, long totalSum) {
 //    this.clientId = id;
 //    this.clientNameInput.setText(name);
@@ -45,8 +45,10 @@ public class ClientSessionPanel extends Composite {
   private Label clientNameLabel;
   private ListBox clientNameInput;
 //  private TextBox clientNameInput;
+  private ListBox whoseBox;
+
   private Label commentLabel;
-  private TextBox clientCommentInput;
+  private TextArea clientCommentInput;
   private CheckBox remindAfterCheckBox;
   private TextBox remindAfterInput;
   private TextBox remindAfterMinutes;
@@ -81,21 +83,67 @@ public class ClientSessionPanel extends Composite {
   }
 
   private boolean isFirstAdmin;
+  private boolean isSecondAdmin;
+  private boolean isSuperAdmin;
 
   public boolean isFirstAdmin() {
     return isFirstAdmin;
   }
 
-  public ClientSessionPanel(final boolean isFirstAdmin, long id, String name, String comment, long totalTime, long totalSum) {
+  public ClientSessionPanel(final boolean isSuperAdmin, final boolean isFirstAdmin, final boolean isSecondAdmin, long id, String name, String comment, long totalTime, long totalSum) {
     notificationEmailAudio = Audio.createIfSupported();
     notificationEmailAudio.setSrc("sounds/email_notification.wav");
     this.isFirstAdmin = isFirstAdmin;
+    this.isSuperAdmin = isSuperAdmin;
+    this.isSecondAdmin = isSecondAdmin;
     this.clientId = id;
     mainPanel = new HorizontalPanel();
     initWidget(mainPanel);
     mainPanel.setWidth("500px");
     setHeight("20px");
     mainPanel.addStyleName("session-panel");
+
+
+    whoseBox = new ListBox();
+    whoseBox.setWidth("35px");
+    whoseBox.addStyleName("custom-input");
+    whoseBox.addItem(WhoseSessionEnum.FIRST.getShortName());
+    whoseBox.addItem(WhoseSessionEnum.SECOND.getShortName());
+    whoseBox.addItem(WhoseSessionEnum.ADMIN.getShortName());
+    if (isSuperAdmin) {
+      whoseBox.setSelectedIndex(2);
+    } else if (isFirstAdmin) {
+      whoseBox.setSelectedIndex(0);
+    } else if (isSecondAdmin) {
+      whoseBox.setSelectedIndex(1);
+    }
+
+    whoseBox.addChangeHandler(new ChangeHandler() {
+      public void onChange(ChangeEvent event) {
+       ClientSessionPanel.this.isFirstAdmin = false;
+       ClientSessionPanel.this.isSecondAdmin = false;
+       ClientSessionPanel.this.isSuperAdmin = false;
+        if (whoseBox.getSelectedIndex() == 0) {
+          ClientSessionPanel.this.isFirstAdmin = true;
+        } else if (whoseBox.getSelectedIndex() == 1) {
+          ClientSessionPanel.this.isSecondAdmin = true;
+        } else if (whoseBox.getSelectedIndex() == 2) {
+          ClientSessionPanel.this.isSuperAdmin = true;
+        }
+        clientsServiceAsync.updateSessionOwner(clientId, ClientSessionPanel.this.isSuperAdmin,
+                ClientSessionPanel.this.isFirstAdmin, ClientSessionPanel.this.isSecondAdmin, new AsyncCallback<Void>() {
+                  public void onFailure(Throwable caught) {
+                    String s = "dfsddf";
+                  }
+
+                  public void onSuccess(Void result) {
+                    System.out.println("client is updated");
+                  }
+                });
+      }
+    });
+
+    mainPanel.add(whoseBox);
 
     clientNameLabel = new Label("Имя: ");
     clientNameLabel.addStyleName("name-label");
@@ -116,9 +164,10 @@ public class ClientSessionPanel extends Composite {
     commentLabel.addStyleName("name-label");
     mainPanel.add(commentLabel);
 
-    clientCommentInput = new TextBox();
+    clientCommentInput = new TextArea();
     clientCommentInput.addStyleName("custom-input");
     clientCommentInput.setWidth("277px");
+    clientCommentInput.setHeight("30px");
     clientCommentInput.setText(comment);
     mainPanel.add(clientCommentInput);
 
@@ -163,9 +212,10 @@ public class ClientSessionPanel extends Composite {
     minutesLabel.addStyleName("name-label");
     mainPanel.add(minutesLabel);
 
-    startSessionButton = new Button("Начать");
+    startSessionButton = new Button();
     startSessionButton.addStyleName("start-button");
-    mainPanel.add(startSessionButton);
+    startSessionButton.setTitle("Старт");
+//    mainPanel.add(startSessionButton);
 
     final Label totalTimeLabel = new Label("Время:");
     totalTimeLabel.addStyleName("total-time-style");
@@ -178,7 +228,7 @@ public class ClientSessionPanel extends Composite {
     startSessionButton.addClickHandler(new ClickHandler() {
       public void onClick(ClickEvent event) {
         startTime = System.currentTimeMillis();
-        clientsServiceAsync.addClient(isFirstAdmin, 0, clientNameInput.getValue(clientNameInput.getSelectedIndex()), clientCommentInput.getValue(),
+        clientsServiceAsync.addClient(isSuperAdmin, isFirstAdmin, isSecondAdmin, 0, clientNameInput.getValue(clientNameInput.getSelectedIndex()), clientCommentInput.getValue(),
                 startTime, totalSumCurrentValue , new AsyncCallback<Long>() {
                   public void onFailure(Throwable caught) {
                     // Show the RPC error message to the user
@@ -235,8 +285,10 @@ public class ClientSessionPanel extends Composite {
 
     createTotalSumSection();
 
-    stopTheSessionButton = new Button("Остановить");
+    mainPanel.add(startSessionButton);
+    stopTheSessionButton = new Button();
     stopTheSessionButton.addStyleName("stop-button");
+    stopTheSessionButton.setTitle("Стоп");
     stopTheSessionButton.addClickHandler(new ClickHandler() {
       public void onClick(ClickEvent event) {
         remindTimeTimer.cancel();
@@ -245,8 +297,9 @@ public class ClientSessionPanel extends Composite {
     });
     mainPanel.add(stopTheSessionButton);
 
-    closeTheSessionButton = new Button("Удалить");
+    closeTheSessionButton = new Button();
     closeTheSessionButton.addStyleName("remove-button");
+    closeTheSessionButton.setTitle("В архив");
     closeTheSessionButton.addClickHandler(new ClickHandler() {
       public void onClick(ClickEvent event) {
         clientsServiceAsync.removeSession(clientId, new AsyncCallback<Void>() {
@@ -255,7 +308,8 @@ public class ClientSessionPanel extends Composite {
           }
 
           public void onSuccess(Void result) {
-            System.out.println("removed");
+            ClientSessionPanel.this.setVisible(false);
+            System.out.println("accepted");
           }
         });
         ClientSessionPanel.this.removeFromParent();
@@ -300,4 +354,19 @@ public class ClientSessionPanel extends Composite {
     return timeUnit<10? "0"+timeUnit: String.valueOf(timeUnit);
   }
 
+  public boolean isSecondAdmin() {
+    return isSecondAdmin;
+  }
+
+  public void setSecondAdmin(boolean secondAdmin) {
+    this.isSecondAdmin = secondAdmin;
+  }
+
+  public boolean isSuperAdmin() {
+    return isSuperAdmin;
+  }
+
+  public void setSuperAdmin(boolean superAdmin) {
+    this.isSuperAdmin = superAdmin;
+  }
 }

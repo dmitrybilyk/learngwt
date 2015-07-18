@@ -10,7 +10,7 @@ import java.util.ArrayList;
  */
 @RemoteServiceRelativePath("clientsService")
 public interface ClientsService extends RemoteService{
-  public Long addClient(boolean isFirstAdmin, long id, String name, String comment, long totalTime, long totalSum);
+  public Long addClient(boolean isSuperAdmin, boolean isFirstAdmin, boolean isSecondAdmin, long id, String name, String comment, long totalTime, long totalSum);
   public ArrayList<toknow.shared.Client> getClients();
 
   void addSession(long id, String name, String comment, long totalTime, long totalSum);
@@ -18,4 +18,6 @@ public interface ClientsService extends RemoteService{
   void updateSession(long id, String name, String comment, long totalTime, long totalSum);
   void removeSession(long id);
   void sendCompleteNotification(long id, String name, String comment, long totalTime, long totalSum);
+
+  void updateSessionOwner(long id, boolean isSuperAdmin, boolean isFirstAdmin, boolean isSecondAdmin);
 }

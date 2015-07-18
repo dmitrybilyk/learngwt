@@ -17,9 +17,9 @@ public class ClientsServiceImpl extends RemoteServiceServlet implements ClientsS
 
   private ClientsHolder holder = new ClientsHolder();
 
-  public Long addClient(boolean isFirstAdmin, long id, String name, String comment, long startTime, long totalSum) {
+  public Long addClient(boolean isSuperAdmin, boolean isFirstAdmin, boolean isSecondAdmin, long id, String name, String comment, long startTime, long totalSum) {
 //    sendNotificationEmail(id, name, comment, totalTime, totalSum);
-    return holder.addClient(isFirstAdmin, id, name, comment, startTime, totalSum);
+    return holder.addClient(isSuperAdmin, isFirstAdmin, isSecondAdmin, id, name, comment, startTime, totalSum);
   }
 
   private void sendNotificationEmail(long id, String name, String comment, long totalTime, long totalSum) {
@@ -81,6 +81,13 @@ public class ClientsServiceImpl extends RemoteServiceServlet implements ClientsS
 
   public void sendCompleteNotification(long id, String name, String comment, long totalTime, long totalSum) {
     sendNotificationEmail(id, name, comment, totalTime, totalSum);
+  }
+
+  public void updateSessionOwner(long id, boolean isSuperAdmin, boolean isFirstAdmin, boolean isSecondAdmin) {
+    Client client = holder.getClientById(id);
+    client.setFirstAdmin(isFirstAdmin);
+    client.setSecondAdmin(isSecondAdmin);
+    client.setSuperAdmin(isSuperAdmin);
   }
 
 }

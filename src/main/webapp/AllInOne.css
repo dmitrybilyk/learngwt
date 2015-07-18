@@ -141,15 +141,22 @@ div.text-color-red textarea{
     font-size: 16px !important;
     margin-left: 5px !important;
     margin-right: 5px !important;
+    height: 18px;
+    background: url("images/fam/control_play_blue.png") no-repeat 0 0 !important;
 }
 
 .stop-button {
     border-radius: 20%;
-    margin-right: 3px;
+    margin-right: 10px !important;
+    margin-left: 10px !important;
+    height: 18px;
+    background: url("images/fam/control_stop_blue.png") no-repeat 0 0 !important;
 }
 
 .remove-button {
     border-radius: 20%;
+    height: 18px;
+    background: url("images/fam/accept.png") no-repeat 0 0 !important;
 }
 
 .main-panel-style {
@@ -172,10 +179,18 @@ div.text-color-red textarea{
     border: 1px solid;
     border-radius: 17%;
     padding: 5px;
+    margin-left: 3px;
+    margin-right: 3px;
 }
 
 .custom-input {
+    background-color: #F5DEB3;
     /*margin: 9px 5px 5px;*/
+}
+
+.comment-text-area {
+    background-color: #F5DEB3;
+    height: 30px;
 }
 
 .remind-input {
@@ -195,6 +210,8 @@ div.text-color-red textarea{
     border-radius: 10%;
     font-size: 15px;
     padding: 5px;
+    margin-left: 10px !important;
+    margin-right: 10px !important;
 }
 
 body {
@@ -215,6 +232,8 @@ body {
     border-radius: 10%;
     font-size: 15px;
     padding: 5px;
+    margin-left: 10px !important;
+    margin-right: 10px !important;
 }
 
 .per-minute-style {
@@ -254,4 +273,15 @@ body {
 
 .second-admin-style {
     background-color: #3366cc;
+}
+
+.super-admin-style {
+    background-color: green;
+}
+
+.total-sum-style {
+    color: #F5FFFA;
+    font-size: 30px;
+    text-align: center;
+    text-decoration: underline;
 }

@@ -9,9 +9,10 @@ import java.util.ArrayList;
 import java.util.Collection;
 
 public interface ClientsServiceAsync {
-  void addClient(boolean isFirstAdmin, long id, String name, String comment, long startTime, long totalSum, AsyncCallback<Long> async);
+  void addClient(boolean isSuperAdmin,boolean isFirstAdmin, boolean isSecondAdmin, long id, String name, String comment, long startTime, long totalSum, AsyncCallback<Long> async);
   void addSession(long id, String name, String comment, long totalTime, long totalSum, AsyncCallback<Void> async);
   void updateSession(long id, String name, String comment, long totalTime, long totalSum, AsyncCallback<Void> async);
+  void updateSessionOwner(long id, boolean isSuperAdmin,boolean isFirstAdmin, boolean isSecondAdmin, AsyncCallback<Void> async);
 
   void getClients(AsyncCallback<ArrayList<toknow.shared.Client>> async);
 
