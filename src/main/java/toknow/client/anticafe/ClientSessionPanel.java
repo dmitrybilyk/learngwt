@@ -387,15 +387,7 @@ public class ClientSessionPanel extends Composite {
     });
     mainPanel.add(stopSessionButton);
 
-      stopSessionButton.setEnabled(isInProgress);
-      startSessionButton.setEnabled(!isInProgress);
-    if (isInProgress) {
-      stopSessionButton.removeStyleName("disabled-style");
-      startSessionButton.addStyleName("disabled-style");
-    } else {
-      stopSessionButton.addStyleName("disabled-style");
-      startSessionButton.removeStyleName("disabled-style");
-    }
+toggleStartStopButtonsAvailable();
 
     closeTheSessionButton = new Button();
     closeTheSessionButton.addStyleName("remove-button");
@@ -534,4 +526,18 @@ public class ClientSessionPanel extends Composite {
   public void setSuperAdmin(boolean superAdmin) {
     this.isSuperAdmin = superAdmin;
   }
+
+  public void toggleStartStopButtonsAvailable() {
+    stopSessionButton.setEnabled(isInProgress);
+    startSessionButton.setEnabled(!isInProgress);
+    if (isInProgress) {
+      stopSessionButton.removeStyleName("disabled-style");
+      startSessionButton.addStyleName("disabled-style");
+    } else {
+      stopSessionButton.addStyleName("disabled-style");
+      startSessionButton.removeStyleName("disabled-style");
+    }
+  }
+
+
 }

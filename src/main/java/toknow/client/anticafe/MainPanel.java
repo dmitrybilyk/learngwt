@@ -214,6 +214,7 @@ public class MainPanel extends Composite {
             boolean isCurrentlyFirst = verticalPanel.getStyleName().contains("first-admin-style");
             boolean isCurrentlySecond = verticalPanel.getStyleName().contains("second-admin-style");
             boolean isCurrentlyAdmin = verticalPanel.getStyleName().contains("super-admin-style");
+            ((ClientSessionPanel) childWidget).toggleStartStopButtonsAvailable();
             if (isCurrentlyFirst) {
               childWidget.setVisible(((ClientSessionPanel) childWidget).isFirstAdmin());
               childWidget.removeStyleName("second-admin-style");
