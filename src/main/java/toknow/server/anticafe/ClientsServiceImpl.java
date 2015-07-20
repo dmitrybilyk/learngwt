@@ -8,6 +8,7 @@ import javax.mail.*;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Properties;
 
 /**
@@ -64,15 +65,25 @@ public class ClientsServiceImpl extends RemoteServiceServlet implements ClientsS
   }
 
   public ArrayList<Client> getClients() {
-    return holder.getClients();
+    ArrayList<Client> clients = holder.getClients();
+    Collections.sort(clients);
+    return clients;
   }
 
   public void addSession(long id, String name, String comment, long totalTime, long totalSum) {
 
   }
 
-  public void updateSession(long id, String name, String comment, long totalTime, long totalSum) {
-
+  public void updateSession(boolean isSuperAdmin, boolean isFirstAdmin, boolean isSecondAdmin, long id, String name, String comment, long startTime, long totalSum) {
+    Client client = holder.getClientById(id);
+    client.setSuperAdmin(isSuperAdmin);
+    client.setFirstAdmin(isFirstAdmin);
+    client.setSecondAdmin(isSecondAdmin);
+//    client.setId(id);
+    client.setName(name);
+    client.setComment(comment);
+    client.setStartTime(startTime);
+    client.setTotalSum(totalSum);
   }
 
   public void removeSession(long id) {
@@ -96,6 +107,15 @@ public class ClientsServiceImpl extends RemoteServiceServlet implements ClientsS
 
   public void acceptSession(long id) {
     holder.getClientById(id).setAccepted(true);
+  }
+
+  public void startSession(long id, long startTime) {
+    Client client = holder.getClientById(id);
+    if (client != null) {
+      client.setStartTime(startTime);
+      client.setInProgress(true);
+    }
+    ;
   }
 
 }

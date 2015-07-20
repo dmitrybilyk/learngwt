@@ -1,25 +1,28 @@
 package toknow.shared;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.io.Serializable;
 
 /**
  * Created by dmitry on 11.07.15.
  */
-public class Client implements Serializable{
+public class Client implements Serializable, Comparable{
   private boolean isSecondAdmin;
   private boolean isSuperAdmin;
   private long id;
 
+  private long creationalTime;
   private String name;
   private String comment;
-  private long totalTime;
+  private long startTime;
   private long totalSum;
   private boolean isFirstAdmin;
   private boolean isInProgress;
   private long limitTime = 1000 * 60 * 60 * 5;
   private boolean accepted;
 
-  public Client(boolean isInProgress, boolean isSuperAdmin, boolean isFirstAdmin, boolean isSecondAdmin, long id, String name, String comment, long totalTime, long totalSum) {
+  public Client(boolean isInProgress, boolean isSuperAdmin, boolean isFirstAdmin, boolean isSecondAdmin, long id, String name, String comment, long startTime, long totalSum) {
     this.isInProgress = isInProgress;
     this.isSuperAdmin = isSuperAdmin;
     this.isFirstAdmin = isFirstAdmin;
@@ -27,7 +30,7 @@ public class Client implements Serializable{
     this.id = id;
     this.name = name;
     this.comment = comment;
-    this.totalTime = totalTime;
+    this.startTime = startTime;
     this.totalSum = totalSum;
 
   }
@@ -59,12 +62,12 @@ public class Client implements Serializable{
     this.comment = comment;
   }
 
-  public long getTotalTime() {
-    return totalTime;
+  public long getStartTime() {
+    return startTime;
   }
 
-  public void setTotalTime(long totalTime) {
-    this.totalTime = totalTime;
+  public void setStartTime(long startTime) {
+    this.startTime = startTime;
   }
 
   public long getTotalSum() {
@@ -121,5 +124,21 @@ public class Client implements Serializable{
 
   public boolean isAccepted() {
     return accepted;
+  }
+
+  public long getCreationalTime() {
+    return creationalTime;
+  }
+
+  public void setCreationalTime(long creationalTime) {
+    this.creationalTime = creationalTime;
+  }
+
+  public int compareTo(@NotNull Object o) {
+    Client compared = (Client) o;
+    if (getCreationalTime() > compared.getCreationalTime()) {
+     return 1;
+    }
+    return -1;
   }
 }

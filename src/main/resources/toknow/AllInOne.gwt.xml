@@ -42,5 +42,5 @@
     <set-property-fallback name="locale" value="en_US"/>
     <set-property name="locale" value="en_US"/>
     <extend-property name="locale" values="ru_RU"/>
-    <set-property name="user.agent" value="gecko1_8"/>
+    <!--<set-property name="user.agent" value="gecko1_8"/>-->
 </module>

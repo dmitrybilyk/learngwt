@@ -137,26 +137,29 @@ div.text-color-red textarea{
 }
 
 .start-button {
-    border-radius: 20%;
     font-size: 16px !important;
     margin-left: 5px !important;
     margin-right: 5px !important;
-    height: 18px;
-    background: url("images/fam/control_play_blue.png") no-repeat 0 0 !important;
+    height: 32px;
+    width: 32px;
+    border-radius: 50%;
+    background: url("images/play.png") no-repeat 0 0 !important;
 }
 
 .stop-button {
-    border-radius: 20%;
     margin-right: 10px !important;
     margin-left: 10px !important;
-    height: 18px;
-    background: url("images/fam/control_stop_blue.png") no-repeat 0 0 !important;
+    height: 32px;
+    width: 32px;
+    border-radius: 50%;
+    background: url("images/stop.png") no-repeat 0 0 !important;
 }
 
 .remove-button {
-    border-radius: 20%;
-    height: 18px;
-    background: url("images/fam/accept.png") no-repeat 0 0 !important;
+    height: 32px;
+    width: 32px;
+    border-radius: 50%;
+    background: url("images/archive.png") no-repeat 0 0 !important;
 }
 
 .main-panel-style {
@@ -212,6 +215,30 @@ div.text-color-red textarea{
     padding: 5px;
     margin-left: 10px !important;
     margin-right: 10px !important;
+}
+
+.time-style{
+    height: 21px;
+    width: 21px;
+    border-radius: 50%;
+    border:none !important;
+    background: url("images/time.png") no-repeat 0 0 !important;
+}
+
+.remind-style{
+    height: 32px;
+    width: 34px;
+    border-radius: 50%;
+    border:none !important;
+    background: url("images/remind.png") no-repeat 0 0 !important;
+}
+
+.money-style{
+    height: 21px;
+    width: 21px;
+    border-radius: 50%;
+    border:none !important;
+    background: url("images/money.png") no-repeat 0 0 !important;
 }
 
 body {
@@ -284,4 +311,8 @@ body {
     font-size: 30px;
     text-align: center;
     text-decoration: underline;
+}
+
+.disabled-style {
+    opacity: 0.4;
 }

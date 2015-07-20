@@ -15,7 +15,7 @@ public interface ClientsService extends RemoteService{
 
   void addSession(long id, String name, String comment, long totalTime, long totalSum);
 
-  void updateSession(long id, String name, String comment, long totalTime, long totalSum);
+  void updateSession(boolean isSuperAdmin, boolean isFirstAdmin, boolean isSecondAdmin, long id, String name, String comment, long startTime, long totalSum);
   void removeSession(long id);
   void sendCompleteNotification(long id, String name, String comment, long totalTime, long totalSum);
 
@@ -24,4 +24,6 @@ public interface ClientsService extends RemoteService{
   void stopSession(long id);
 
   void acceptSession(long id);
+
+  void startSession(long id, long startTime);
 }

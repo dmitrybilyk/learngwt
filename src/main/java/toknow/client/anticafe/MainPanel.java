@@ -61,6 +61,7 @@ public class MainPanel extends Composite {
     Timer updateCurrentStateTimer = new Timer() {
       @Override
       public void run() {
+//        sessionsPanel.clear();
         clientsServiceAsync.getClients(new AsyncCallback<ArrayList<Client>>() {
           public void onFailure(Throwable caught) {
             String s = "fdsf";
@@ -68,23 +69,38 @@ public class MainPanel extends Composite {
 
           public void onSuccess(ArrayList<Client> result) {
             for (Client client: result) {
-              Iterator<Widget> vPanelWidgets = sessionsPanel.iterator();
-              while (vPanelWidgets.hasNext()) {
-                Widget childWidget = vPanelWidgets.next();
-                if (childWidget instanceof ClientSessionPanel) {
-                  if (client.getId() == ((ClientSessionPanel) childWidget).getClientId()) {
-                    if (!client.isInProgress()) {
-                      ((ClientSessionPanel) childWidget).stopSession();
-                    }
-                    if (client.isAccepted()) {
-                      ((ClientSessionPanel) childWidget).setVisible(false);
-                    }
-                  }
+              ClientSessionPanel clientSessionPanel = getClientSessionByClientId(client.getId());
 
-                }
+              if (clientSessionPanel == null) {
+                clientSessionPanel = new ClientSessionPanel(
+                        client.getCreationalTime(), client.isSuperAdmin(), client.isFirstAdmin(),
+                        client.isSecondAdmin(), client.getId(), client.getName(), client.getComment(),
+                        client.getStartTime(), client.getTotalSum(), client.isInProgress());
+                clientSessionPanel.setVisible(!client.isAccepted());
+                clientSessionPanel.setStartTime(client.getStartTime());
+                clientSessionPanel.setInProgress(client.isInProgress());
+                clientSessionPanel.setAccepted(client.isAccepted());
+                sessionsPanel.add(clientSessionPanel);
+              } else {
+              clientSessionPanel.setStartTime(client.getStartTime());
+              clientSessionPanel.setClientCommentValue(client.getComment());
+              clientSessionPanel.setClientNameValue(client.getName());
+              if (!client.isInProgress()) {
+                clientSessionPanel.stopSession();
+              } else {
+                clientSessionPanel.startSession();
               }
+              }
+//              else {
+//                updatePanel(client);
+//              }
+//
+//              if (!client.isInProgress()) {
+//                clientSessionPanel.stopSession();
+//              } else {
+//                sessionsPanel.add(clientSessionPanel);
+//              }
             }
-
           }
         });
       }
@@ -132,7 +148,7 @@ public class MainPanel extends Composite {
         totalSumLabel.setVisible(false);
         userNameInput.setValue("");
 //        totalSumLabel.setText("0.00");
-//        updateTotalSumTimer.cancel();
+        updateTotalSumTimer.cancel();
 
       }
     });
@@ -158,7 +174,14 @@ public class MainPanel extends Composite {
 
     loginButton.addClickHandler(new ClickHandler() {
       public void onClick(ClickEvent event) {
-        totalSumLabel.setVisible(false);
+        updateTotalSumTimer.scheduleRepeating(1000);
+        Timer delaySumTimer = new Timer() {
+          @Override
+          public void run() {
+            totalSumLabel.setVisible(true);
+          }
+        };
+        delaySumTimer.schedule(2000);
         sessionsPanel.setVisible(true);
         logoutButton.setVisible(true);
 //        userNameInput.setValue("could be any)");
@@ -166,7 +189,6 @@ public class MainPanel extends Composite {
         verticalLoginPanel.setVisible(false);
         verticalPanel.setVisible(false);
         verticalPanel.setVisible(true);
-        totalSumLabel.setVisible(true);
 
         logoutButton.setText("Выход пользователя " + " " + userNameInput.getValue());
 //        Timer updateTotalSumTimer = creatTotalSumTimer(sessionsPanel);
@@ -225,32 +247,92 @@ public class MainPanel extends Composite {
 
   }
 
+  private void updatePanel(Client client) {
+    Iterator<Widget> vPanelWidgets = sessionsPanel.iterator();
+    while (vPanelWidgets.hasNext()){
+
+      Widget childWidget = vPanelWidgets.next();
+      if (childWidget instanceof ClientSessionPanel) {
+        if (((ClientSessionPanel) childWidget).getClientId() == client.getId()){
+          ((ClientSessionPanel) childWidget).setSuperAdmin(client.isSuperAdmin());
+          ((ClientSessionPanel) childWidget).setFirstAdmin(client.isFirstAdmin());
+          ((ClientSessionPanel) childWidget).setClientNameValue(client.getName());
+          ((ClientSessionPanel) childWidget).setClientCommentValue(client.getComment());
+        }
+      }
+    }
+  }
+
+  private ClientSessionPanel getClientSessionByClientId(long id) {
+    Iterator<Widget> vPanelWidgets = sessionsPanel.iterator();
+    while (vPanelWidgets.hasNext()){
+
+      Widget childWidget = vPanelWidgets.next();
+      if (childWidget instanceof ClientSessionPanel) {
+        if (((ClientSessionPanel) childWidget).getClientId() == id) {
+          return (ClientSessionPanel)childWidget;
+        }
+      }
+    }
+    return null;
+  }
+
+  private boolean isSessionAlreadyPresentOnPanel(Client client) {
+    Iterator<Widget> vPanelWidgets = sessionsPanel.iterator();
+    while (vPanelWidgets.hasNext()){
+
+      Widget childWidget = vPanelWidgets.next();
+      if (childWidget instanceof ClientSessionPanel) {
+        if (((ClientSessionPanel) childWidget).getClientId() == client.getId()) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
   private void addSessionToUser(Client client, boolean isCurrentlyFirst, boolean isCurrentlySecond, boolean isCurrentlyAdmin, VerticalPanel sessionsPanel) {
     if (isCurrentlyFirst) {
-      sessionsPanel.add(new ClientSessionPanel(client.isSuperAdmin(), client.isFirstAdmin(), client.isSecondAdmin(),
-              client.getId(), client.getName(), client.getComment(), client.getTotalTime(), client.getTotalSum() ));
+      sessionsPanel.add(new ClientSessionPanel(client.getCreationalTime(), client.isSuperAdmin(), client.isFirstAdmin(), client.isSecondAdmin(),
+              client.getId(), client.getName(), client.getComment(), client.getStartTime(), client.getTotalSum(), client.isInProgress()));
     } else if (isCurrentlySecond){
-      sessionsPanel.add(new ClientSessionPanel(client.isSuperAdmin(), client.isFirstAdmin(), client.isSecondAdmin(),
-              client.getId(), client.getName(), client.getComment(), client.getTotalTime(), client.getTotalSum() ));
+      sessionsPanel.add(new ClientSessionPanel(client.getCreationalTime(), client.isSuperAdmin(), client.isFirstAdmin(), client.isSecondAdmin(),
+              client.getId(), client.getName(), client.getComment(), client.getStartTime(), client.getTotalSum(), client.isInProgress()));
     } else if (isCurrentlyAdmin) {
-      sessionsPanel.add(new ClientSessionPanel(client.isSuperAdmin(), client.isFirstAdmin(), client.isSecondAdmin(),
-              client.getId(), client.getName(), client.getComment(), client.getTotalTime(), client.getTotalSum() ));
+      sessionsPanel.add(new ClientSessionPanel(client.getCreationalTime(), client.isSuperAdmin(), client.isFirstAdmin(), client.isSecondAdmin(),
+              client.getId(), client.getName(), client.getComment(), client.getStartTime(), client.getTotalSum(), client.isInProgress()));
     } else {
-      sessionsPanel.add(new ClientSessionPanel(client.isSuperAdmin(), client.isFirstAdmin(), client.isSecondAdmin(),
-              client.getId(), client.getName(), client.getComment(), client.getTotalTime(), client.getTotalSum() ));
+      sessionsPanel.add(new ClientSessionPanel(client.getCreationalTime(), client.isSuperAdmin(), client.isFirstAdmin(), client.isSecondAdmin(),
+              client.getId(), client.getName(), client.getComment(), client.getStartTime(), client.getTotalSum(), client.isInProgress()));
     }
   }
 
   private void addSessionToUser(boolean isCurrentlyFirst, boolean isCurrentlySecond, boolean isCurrentlyAdmin, VerticalPanel sessionsPanel) {
+    final ClientSessionPanel clientSessionPanel;
     if (isCurrentlyFirst) {
-      sessionsPanel.add(new ClientSessionPanel(false, true, false, 0, "", "", 0, 0 ));
+      clientSessionPanel = new ClientSessionPanel(System.currentTimeMillis(), false, true, false, 0, "", "", 0, 0, false);
+      sessionsPanel.add(clientSessionPanel);
     } else if (isCurrentlySecond){
-      sessionsPanel.add(new ClientSessionPanel(false, false, true, 0, "", "", 0, 0 ));
+      clientSessionPanel = new ClientSessionPanel(System.currentTimeMillis(), false, false, true, 0, "", "", 0, 0, false);
+      sessionsPanel.add(clientSessionPanel);
     } else if (isCurrentlyAdmin) {
-      sessionsPanel.add(new ClientSessionPanel(true, false, false, 0, "", "", 0, 0 ));
+      clientSessionPanel = new ClientSessionPanel(System.currentTimeMillis(), true, false, false, 0, "", "", 0, 0, false);
+      sessionsPanel.add(clientSessionPanel);
     } else {
-      sessionsPanel.add(new ClientSessionPanel(false, false, false, 0, "", "", 0, 0 ));
+      clientSessionPanel = new ClientSessionPanel(System.currentTimeMillis(), false, false, false, 0, "", "", 0, 0, false);
+      sessionsPanel.add(clientSessionPanel);
     }
+    clientsServiceAsync.addClient(isCurrentlyAdmin, isCurrentlyFirst, isCurrentlySecond, 0, "", "",
+            System.currentTimeMillis(), 0 , new AsyncCallback<Long>() {
+              public void onFailure(Throwable caught) {
+                // Show the RPC error message to the user
+                String s = "dfd";
+              }
+
+              public void onSuccess(Long result) {
+                clientSessionPanel.setClientId(result);
+              }
+            });
   }
 
   private Timer creatTotalSumTimer(final VerticalPanel sessionsPanel) {
@@ -313,7 +395,7 @@ public class MainPanel extends Composite {
 //                  verticalPanel.getStyleName().contains("first-admin-style"),
 //                  verticalPanel.getStyleName().contains("second-admin-style"),
 //                  client.getId(), client.getName(), client.getComment(),
-//                  client.getTotalTime(), client.getTotalSum()), 1);
+//                  client.getStartTime(), client.getTotalSum()), 1);
 
           addSessionToUser(client, client.isFirstAdmin(), client.isSecondAdmin(), client.isSuperAdmin(), sessionsPanel);
         }

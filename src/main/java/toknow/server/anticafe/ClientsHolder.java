@@ -30,7 +30,7 @@ public class ClientsHolder {
 //    } catch (SchedulerException e) {
 //      e.printStackTrace();
 //    }
-    clientMap.put(nextId, new Client(true, isSuperAdmin, isFirstAdmin, isSecondAdmin, nextId, name, comment, startTime, sum));
+    clientMap.put(nextId, new Client(false, isSuperAdmin, isFirstAdmin, isSecondAdmin, nextId, name, comment, startTime, sum));
     return nextId;
   }
 

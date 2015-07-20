@@ -41,6 +41,16 @@ public class ClientSessionPanel extends Composite {
   private Audio notificationEmailAudio;
 
   private long clientId;
+  private long creationalTime;
+
+  public long getCreationalTime() {
+    return creationalTime;
+  }
+
+  public void setCreationalTime(long creationalTime) {
+    this.creationalTime = creationalTime;
+  }
+
   private HorizontalPanel mainPanel;
   private Label clientNameLabel;
   private ListBox clientNameInput;
@@ -56,7 +66,7 @@ public class ClientSessionPanel extends Composite {
   private Label totalTimeLabel;
   private Button checkLeftTimeButton;
   private Button closeTheSessionButton;
-  private Button stopTheSessionButton;
+  private Button stopSessionButton;
   private Label clientStartTimeLabel;
   private Label clientEndTimeLabel;
   private Label leftTimeLabel;
@@ -70,9 +80,15 @@ public class ClientSessionPanel extends Composite {
   private Timer refreshTotalSumTimer;
   private long scheduledToRemindTime = 10000; // remind in 100 seconds
   private long startTime;
+
+  public void setStartTime(long startTime) {
+    this.startTime = startTime;
+  }
+
   private long finishTime;
   private long minTime = 60000; // minimum period 1 minutes
   private long minPayment = 3500;
+  private long maxLength = 1000 * 60 * 4;
 
   private final ClientsServiceAsync clientsServiceAsync = GWT.create(ClientsService.class);
   private long currentTimeValue;
@@ -89,13 +105,33 @@ public class ClientSessionPanel extends Composite {
   private boolean isInProgress;
   private boolean isAccepted;
 
+  public boolean isInProgress() {
+    return isInProgress;
+  }
+
+  public void setInProgress(boolean isInProgress) {
+    this.isInProgress = isInProgress;
+  }
+
+  public boolean isAccepted() {
+    return isAccepted;
+  }
+
+  public void setAccepted(boolean isAccepted) {
+    this.isAccepted = isAccepted;
+  }
+
   public boolean isFirstAdmin() {
     return isFirstAdmin;
   }
 
-  public ClientSessionPanel(final boolean isSuperAdmin, final boolean isFirstAdmin, final boolean isSecondAdmin, long id, String name, String comment, final long startTime, long totalSum) {
+  public void setFirstAdmin(boolean isFirstAdmin) {
+    this.isFirstAdmin = isFirstAdmin;
+  }
 
+  public ClientSessionPanel(long creationalTime, final boolean isSuperAdmin, final boolean isFirstAdmin, final boolean isSecondAdmin, long id, String name, String comment, final long startTime, long totalSum, boolean inProgress) {
 
+    this.creationalTime = creationalTime;
     notificationEmailAudio = Audio.createIfSupported();
     notificationEmailAudio.setSrc("sounds/email_notification.wav");
     this.isFirstAdmin = isFirstAdmin;
@@ -163,11 +199,7 @@ public class ClientSessionPanel extends Composite {
     clientNameInput.addItem("Бах");
     clientNameInput.addItem("Билык");
 //    int foundIndex = 0;
-    for (int i = 0; i < clientNameInput.getItemCount(); i++) {
-      if(clientNameInput.getItemText(i).equals(name)) {
-        clientNameInput.setSelectedIndex(i);
-      }
-    }
+    setClientNameValue(name);
 
     if (isSuperAdmin) {
       whoseBox.setSelectedIndex(2);
@@ -185,7 +217,7 @@ public class ClientSessionPanel extends Composite {
 
     clientCommentInput = new TextArea();
     clientCommentInput.addStyleName("custom-input");
-    clientCommentInput.setWidth("277px");
+    clientCommentInput.setWidth("170px");
     clientCommentInput.setHeight("30px");
     clientCommentInput.setText(comment);
     mainPanel.add(clientCommentInput);
@@ -201,8 +233,8 @@ public class ClientSessionPanel extends Composite {
       }
     });
 
-    Label remindLabel = new Label("Напомнить: ");
-    remindLabel.addStyleName("name-label");
+    Label remindLabel = new Label();
+    remindLabel.addStyleName("remind-style");
     mainPanel.add(remindLabel);
     mainPanel.add(remindAfterCheckBox);
 
@@ -236,8 +268,9 @@ public class ClientSessionPanel extends Composite {
     startSessionButton.setTitle("Старт");
 //    mainPanel.add(startSessionButton);
 
-    final Label totalTimeLabel = new Label("Время:");
+    final Label totalTimeLabel = new Label();
     totalTimeLabel.addStyleName("total-time-style");
+    totalTimeLabel.addStyleName("time-style");
     mainPanel.add(totalTimeLabel);
 
     final Label totalTimeValue = new Label("00:00:00");
@@ -247,20 +280,26 @@ public class ClientSessionPanel extends Composite {
     startSessionButton.addClickHandler(new ClickHandler() {
       public void onClick(ClickEvent event) {
 
-        if (clientId == 0) {
+//        if (clientId == 0) {
           ClientSessionPanel.this.startTime = System.currentTimeMillis();
-          clientsServiceAsync.addClient(isSuperAdmin, isFirstAdmin, isSecondAdmin, 0, clientNameInput.getValue(clientNameInput.getSelectedIndex()), clientCommentInput.getValue(),
-                  ClientSessionPanel.this.startTime, totalSumCurrentValue , new AsyncCallback<Long>() {
+          clientsServiceAsync.startSession(clientId, ClientSessionPanel.this.startTime,  new AsyncCallback<Void>() {
                     public void onFailure(Throwable caught) {
                       // Show the RPC error message to the user
                       String s = "dfd";
                     }
 
-                    public void onSuccess(Long result) {
-                      clientId = result;
+                    public void onSuccess(Void result) {
+//                      clientId = result;
+                      startSessionButton.setEnabled(false);
+                      startSessionButton.addStyleName("disabled-style");
+                      stopSessionButton.setEnabled(true);
+                      stopSessionButton.removeStyleName("disabled-style");
+                      refreshTotalSumTimer.scheduleRepeating(1000);
                     }
                   });
-        }
+//        } else {
+//          refreshTotalSumTimer.scheduleRepeating(1000);
+//        }
 
 
         finishTime = ClientSessionPanel.this.startTime + Long.valueOf(remindAfterInput.getValue()) * 1000;
@@ -311,30 +350,52 @@ public class ClientSessionPanel extends Composite {
           totalSumCurrentValue = totalSum;
           totalSumValue.setText(getPrettyMoney(totalSum));
       }
-      refreshTotalSumTimer.scheduleRepeating(1000);
+
+//      if (getSeconds(currentTimeValue) < maxLength/ 1000) {
+      if (inProgress) {
+        refreshTotalSumTimer.scheduleRepeating(1000);
+      } else {
+        stopSessionOnServer();
+      }
     }
 
 
 
     mainPanel.add(startSessionButton);
-    stopTheSessionButton = new Button();
-    stopTheSessionButton.addStyleName("stop-button");
-    stopTheSessionButton.setTitle("Стоп");
-    stopTheSessionButton.addClickHandler(new ClickHandler() {
+    stopSessionButton = new Button();
+    stopSessionButton.addStyleName("stop-button");
+    stopSessionButton.setEnabled(false);
+    stopSessionButton.addStyleName("disabled-style");
+    stopSessionButton.setTitle("Стоп");
+    stopSessionButton.addClickHandler(new ClickHandler() {
       public void onClick(ClickEvent event) {
+        stopSession();
         clientsServiceAsync.stopSession(clientId, new AsyncCallback<Void>() {
           public void onFailure(Throwable caught) {
             String s = "sdfsd";
           }
 
           public void onSuccess(Void result) {
-            stopSession();
+            stopSessionButton.setEnabled(false);
+            stopSessionButton.addStyleName("disabled-style");
+            startSessionButton.setEnabled(true);
+            startSessionButton.removeStyleName("disabled-style");
           }
         });
 
       }
     });
-    mainPanel.add(stopTheSessionButton);
+    mainPanel.add(stopSessionButton);
+
+      stopSessionButton.setEnabled(isInProgress);
+      startSessionButton.setEnabled(!isInProgress);
+    if (isInProgress) {
+      stopSessionButton.removeStyleName("disabled-style");
+      startSessionButton.addStyleName("disabled-style");
+    } else {
+      stopSessionButton.addStyleName("disabled-style");
+      startSessionButton.removeStyleName("disabled-style");
+    }
 
     closeTheSessionButton = new Button();
     closeTheSessionButton.addStyleName("remove-button");
@@ -357,15 +418,54 @@ public class ClientSessionPanel extends Composite {
     mainPanel.add(closeTheSessionButton);
   }
 
+  public void setClientNameValue(String name) {
+    for (int i = 0; i < clientNameInput.getItemCount(); i++) {
+      if(clientNameInput.getItemText(i).equals(name)) {
+        clientNameInput.setSelectedIndex(i);
+      }
+    }
+  }
+
+  public void setClientCommentValue(String commentValue) {
+    clientCommentInput.setText(commentValue);
+  }
+
+  public void stopSessionOnServer() {
+    clientsServiceAsync.stopSession(clientId, new AsyncCallback<Void>() {
+      public void onFailure(Throwable caught) {
+        String s = "dfdsf";
+      }
+
+      public void onSuccess(Void result) {
+        System.out.println("Session is stopped");
+      }
+    });
+  }
+
   public void stopSession() {
-    remindTimeTimer.cancel();
+    if (remindTimeTimer != null && remindTimeTimer.isRunning()) {
+      remindTimeTimer.cancel();
+    }
     refreshTotalSumTimer.cancel();
+  }
+
+  public void startSession() {
+    if (remindTimeTimer != null && remindTimeTimer.isRunning()) {
+      remindTimeTimer.cancel();
+    }
+    refreshTotalSumTimer.scheduleRepeating(1000);
   }
 
   private void updateTotalSum(Label totalTimeValue) {
     currentTimeValue = System.currentTimeMillis() - this.startTime;
     totalTimeValue.setText(getMinutesString(currentTimeValue));
     long currentIntervalSeconds = getSeconds(currentTimeValue);
+    //TODO
+//    if (currentIntervalSeconds > maxLength/1000) {
+//      stopSession();
+//      stopSessionOnServer();
+//      return;
+//    }
     if (currentIntervalSeconds <= getSeconds(minTime)) {
 //          totalSumCurrentValue = minPayment;
       totalSumValue.setText(getPrettyMoney(minPayment));
@@ -383,11 +483,12 @@ public class ClientSessionPanel extends Composite {
   }
 
   private void createTotalSumSection() {
-    totalSumLabel = new Label("СУММА:");
+    totalSumLabel = new Label();
     totalSumLabel.addStyleName("total-sum");
+    totalSumLabel.addStyleName("money-style");
     mainPanel.add(totalSumLabel);
 
-    totalSumValue = new Label("00,00");
+    totalSumValue = new Label("00.00");
     totalSumValue.addStyleName("total-sum");
     mainPanel.add(totalSumValue);
   }
