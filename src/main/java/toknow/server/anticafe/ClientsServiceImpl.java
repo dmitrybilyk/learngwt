@@ -3,6 +3,7 @@ package toknow.server.anticafe;
 import com.google.gwt.user.server.rpc.RemoteServiceServlet;
 import toknow.client.anticafe.ClientsService;
 import toknow.shared.Client;
+import toknow.shared.WhoseSessionEnum;
 
 import javax.mail.*;
 import javax.mail.internet.InternetAddress;
@@ -18,9 +19,9 @@ public class ClientsServiceImpl extends RemoteServiceServlet implements ClientsS
 
   private ClientsHolder holder = new ClientsHolder();
 
-  public Long addClient(boolean isSuperAdmin, boolean isFirstAdmin, boolean isSecondAdmin, long id, String name, String comment, long startTime, long totalSum) {
+  public Long addClient(WhoseSessionEnum whoseSession, long id, String name, String comment, long startTime, long totalSum) {
 //    sendNotificationEmail(id, name, comment, totalTime, totalSum);
-    return holder.addClient(isSuperAdmin, isFirstAdmin, isSecondAdmin, id, name, comment, startTime, totalSum);
+    return holder.addClient(whoseSession, id, name, comment, startTime, totalSum);
   }
 
   private void sendNotificationEmail(long id, String name, String comment, long totalTime, long totalSum) {
@@ -74,16 +75,10 @@ public class ClientsServiceImpl extends RemoteServiceServlet implements ClientsS
 
   }
 
-  public void updateSession(boolean isSuperAdmin, boolean isFirstAdmin, boolean isSecondAdmin, long id, String name, String comment, long startTime, long totalSum) {
+  public void updateSession(long id, String name, String comment) {
     Client client = holder.getClientById(id);
-    client.setSuperAdmin(isSuperAdmin);
-    client.setFirstAdmin(isFirstAdmin);
-    client.setSecondAdmin(isSecondAdmin);
-//    client.setId(id);
     client.setName(name);
     client.setComment(comment);
-    client.setStartTime(startTime);
-    client.setTotalSum(totalSum);
   }
 
   public void removeSession(long id) {
@@ -94,11 +89,9 @@ public class ClientsServiceImpl extends RemoteServiceServlet implements ClientsS
     sendNotificationEmail(id, name, comment, totalTime, totalSum);
   }
 
-  public void updateSessionOwner(long id, boolean isSuperAdmin, boolean isFirstAdmin, boolean isSecondAdmin) {
+  public void updateSessionOwner(long id, WhoseSessionEnum whoseSession) {
     Client client = holder.getClientById(id);
-    client.setFirstAdmin(isFirstAdmin);
-    client.setSecondAdmin(isSecondAdmin);
-    client.setSuperAdmin(isSuperAdmin);
+    client.setWhoseSession(whoseSession);
   }
 
   public void stopSession(long id) {
@@ -107,6 +100,7 @@ public class ClientsServiceImpl extends RemoteServiceServlet implements ClientsS
 
   public void acceptSession(long id) {
     holder.getClientById(id).setAccepted(true);
+    stopSession(id);
   }
 
   public void startSession(long id, long startTime) {

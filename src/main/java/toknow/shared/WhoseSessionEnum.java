@@ -1,11 +1,11 @@
-package toknow.client.anticafe;
+package toknow.shared;
 
 /**
  * Created by dmitry on 18.07.15.
  */
 public enum WhoseSessionEnum {
 
-  FIRST("1", 0), SECOND("2", 1), ADMIN("A", 2);
+  FIRST("1", 0), SECOND("2", 1), ADMIN("A", 2), NOBODY("N", -1);
 
   private int order;
   private String shortName;

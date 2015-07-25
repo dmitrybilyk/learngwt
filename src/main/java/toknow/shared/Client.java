@@ -8,30 +8,25 @@ import java.io.Serializable;
  * Created by dmitry on 11.07.15.
  */
 public class Client implements Serializable, Comparable{
-  private boolean isSecondAdmin;
-  private boolean isSuperAdmin;
   private long id;
+  WhoseSessionEnum whoseSession;
 
   private long creationalTime;
   private String name;
   private String comment;
   private long startTime;
   private long totalSum;
-  private boolean isFirstAdmin;
   private boolean isInProgress;
   private long limitTime = 1000 * 60 * 60 * 5;
   private boolean accepted;
 
-  public Client(boolean isInProgress, boolean isSuperAdmin, boolean isFirstAdmin, boolean isSecondAdmin, long id, String name, String comment, long startTime, long totalSum) {
-    this.isInProgress = isInProgress;
-    this.isSuperAdmin = isSuperAdmin;
-    this.isFirstAdmin = isFirstAdmin;
-    this.isSecondAdmin = isSecondAdmin;
+  public Client(WhoseSessionEnum whoseSession, long id, String name, String comment, long startTime) {
+    this.creationalTime = System.currentTimeMillis();
+    this.whoseSession = whoseSession;
     this.id = id;
     this.name = name;
     this.comment = comment;
     this.startTime = startTime;
-    this.totalSum = totalSum;
 
   }
 
@@ -78,30 +73,6 @@ public class Client implements Serializable, Comparable{
     this.totalSum = totalSum;
   }
 
-  public boolean isFirstAdmin() {
-    return isFirstAdmin;
-  }
-
-  public void setFirstAdmin(boolean isFirstAdmin) {
-    this.isFirstAdmin = isFirstAdmin;
-  }
-
-  public boolean isSecondAdmin() {
-    return isSecondAdmin;
-  }
-
-  public void setSecondAdmin(boolean isSecondAdmin) {
-    this.isSecondAdmin = isSecondAdmin;
-  }
-
-  public boolean isSuperAdmin() {
-    return isSuperAdmin;
-  }
-
-  public void setSuperAdmin(boolean isSuperAdmin) {
-    this.isSuperAdmin = isSuperAdmin;
-  }
-
   public boolean isInProgress() {
     return isInProgress;
   }
@@ -132,6 +103,14 @@ public class Client implements Serializable, Comparable{
 
   public void setCreationalTime(long creationalTime) {
     this.creationalTime = creationalTime;
+  }
+
+  public WhoseSessionEnum getWhoseSession() {
+    return whoseSession;
+  }
+
+  public void setWhoseSession(WhoseSessionEnum whoseSession) {
+    this.whoseSession = whoseSession;
   }
 
   public int compareTo(@NotNull Object o) {

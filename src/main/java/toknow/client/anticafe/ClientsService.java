@@ -2,6 +2,7 @@ package toknow.client.anticafe;
 
 import com.google.gwt.user.client.rpc.RemoteService;
 import com.google.gwt.user.client.rpc.RemoteServiceRelativePath;
+import toknow.shared.WhoseSessionEnum;
 
 import java.util.ArrayList;
 
@@ -10,16 +11,16 @@ import java.util.ArrayList;
  */
 @RemoteServiceRelativePath("clientsService")
 public interface ClientsService extends RemoteService{
-  public Long addClient(boolean isSuperAdmin, boolean isFirstAdmin, boolean isSecondAdmin, long id, String name, String comment, long totalTime, long totalSum);
+  public Long addClient(WhoseSessionEnum whoseSessionEnum, long id, String name, String comment, long totalTime, long totalSum);
   public ArrayList<toknow.shared.Client> getClients();
 
   void addSession(long id, String name, String comment, long totalTime, long totalSum);
 
-  void updateSession(boolean isSuperAdmin, boolean isFirstAdmin, boolean isSecondAdmin, long id, String name, String comment, long startTime, long totalSum);
+  void updateSession(long id, String name, String comment);
   void removeSession(long id);
   void sendCompleteNotification(long id, String name, String comment, long totalTime, long totalSum);
 
-  void updateSessionOwner(long id, boolean isSuperAdmin, boolean isFirstAdmin, boolean isSecondAdmin);
+  void updateSessionOwner(long id, WhoseSessionEnum whoseSession);
 
   void stopSession(long id);
 

@@ -3,13 +3,18 @@ package toknow.client.anticafe;
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.event.dom.client.ClickHandler;
+import com.google.gwt.event.logical.shared.ValueChangeEvent;
+import com.google.gwt.event.logical.shared.ValueChangeHandler;
 import com.google.gwt.user.client.Timer;
 import com.google.gwt.user.client.rpc.AsyncCallback;
 import com.google.gwt.user.client.ui.*;
+import com.google.gwt.user.datepicker.client.DatePicker;
 import toknow.shared.Client;
+import toknow.shared.WhoseSessionEnum;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 
@@ -22,14 +27,18 @@ public class MainPanel extends Composite {
   private TextBox userNameInput;
   private TextBox passwordInput;
   private Button loginButton;
+  private Button logoutButton;
   final VerticalPanel sessionsPanel;
-  private CheckBox isShowAccepted = new CheckBox("Показывать завершенные");
+  private CheckBox isShowAcceptedCheckbox = new CheckBox("Показывать архивные");
   private Label totalSumLabel = new Label();
+  private HorizontalPanel datesPanel = new HorizontalPanel();
+  private DatePicker fromDateWidget = new DatePicker();
+  private DatePicker toDateWidget = new DatePicker();
 
-
+  private WhoseSessionEnum whoseSession = WhoseSessionEnum.NOBODY;
 
   private Button addClientSessionButton;
-  private VerticalPanel verticalPanel;
+  private VerticalPanel mainPanel;
   private List<ClientSessionPanel> clientSessionPanelList;
   private final ClientsServiceAsync clientsServiceAsync = GWT.create(ClientsService.class);
 
@@ -37,24 +46,43 @@ public class MainPanel extends Composite {
 //    addFirstClientToCheck();
 
 
-    HorizontalPanel horizontalPanel = new HorizontalPanel();
-    horizontalPanel.addStyleName("top-panel");
-    horizontalPanel.setWidth("100%");
+    HorizontalPanel addInfoPanel = new HorizontalPanel();
+    Label fromDatesLabel = new Label("От");
+    datesPanel.add(fromDatesLabel);
+    datesPanel.add(fromDateWidget);
+    fromDateWidget.setValue(new Date());
+    fromDateWidget.addValueChangeHandler(new ValueChangeHandler<Date>() {
+      public void onValueChange(ValueChangeEvent<Date> event) {
+        setFromDateRangeValue();
+      }
+    });
+
+
+    final Label toLDatesLabel = new Label("До");
+    datesPanel.add(toLDatesLabel);
+    toDateWidget.addValueChangeHandler(new ValueChangeHandler<Date>() {
+      public void onValueChange(ValueChangeEvent<Date> event) {
+        setToDateRangeValue();
+      }
+    });
+
+
+    datesPanel.add(toDateWidget);
+    toDateWidget.setValue(new Date());
+
+    datesPanel.setVisible(false);
+    addInfoPanel.addStyleName("top-panel");
+    addInfoPanel.setWidth("100%");
 
     sessionsPanel = new VerticalPanel();
     sessionsPanel.setVisible(false);
-    getExistingSessions();
+//    getExistingSessions();
 
     addClientSessionButton = new Button("Добавить сессию");
     addClientSessionButton.addStyleName("add-session-button");
     addClientSessionButton.addClickHandler(new ClickHandler() {
       public void onClick(ClickEvent event) {
-//       verticalPanel.add(new AddSessionDialog());
-        boolean isCurrentlyFirst = verticalPanel.getStyleName().contains("first-admin-style");
-        boolean isCurrentlySecond = verticalPanel.getStyleName().contains("second-admin-style");
-        boolean isCurrentlyAdmin = verticalPanel.getStyleName().contains("super-admin-style");
-        addSessionToUser(isCurrentlyFirst, isCurrentlySecond, isCurrentlyAdmin, sessionsPanel);
-
+        addSessionToUser();
       }
     });
 
@@ -72,86 +100,60 @@ public class MainPanel extends Composite {
               ClientSessionPanel clientSessionPanel = getClientSessionByClientId(client.getId());
 
               if (clientSessionPanel == null) {
-                clientSessionPanel = new ClientSessionPanel(
-                        client.getCreationalTime(), client.isSuperAdmin(), client.isFirstAdmin(),
-                        client.isSecondAdmin(), client.getId(), client.getName(), client.getComment(),
-                        client.getStartTime(), client.getTotalSum(), client.isInProgress());
+                clientSessionPanel = new ClientSessionPanel(client.getWhoseSession(), client.getId(), client.getName(), client.getComment(),
+                        client.getStartTime(), client.isInProgress());
                 clientSessionPanel.setVisible(!client.isAccepted());
                 clientSessionPanel.setStartTime(client.getStartTime());
-                clientSessionPanel.setInProgress(client.isInProgress());
-                clientSessionPanel.setAccepted(client.isAccepted());
+                clientSessionPanel.setCreationalTime(client.getCreationalTime());
                 sessionsPanel.add(clientSessionPanel);
               } else {
-              clientSessionPanel.setStartTime(client.getStartTime());
-              clientSessionPanel.setClientCommentValue(client.getComment());
-              clientSessionPanel.setClientNameValue(client.getName());
-              if (!client.isInProgress()) {
-                clientSessionPanel.stopSession();
-              } else {
-                clientSessionPanel.startSession();
+                clientSessionPanel.setStartTime(client.getStartTime());
+                clientSessionPanel.setClientCommentValue(client.getComment());
+                clientSessionPanel.setClientNameValue(client.getName());
               }
-              }
-//              else {
-//                updatePanel(client);
-//              }
-//
-//              if (!client.isInProgress()) {
-//                clientSessionPanel.stopSession();
-//              } else {
-//                sessionsPanel.add(clientSessionPanel);
-//              }
+              clientSessionPanel.setAccepted(client.isAccepted());
+              clientSessionPanel.setInProgress(client.isInProgress());
+              clientSessionPanel.setWhoIsOwner(client.getWhoseSession());
+              clientSessionPanel.setWhoseSession(whoseSession);
+              clientSessionPanel.setFromDateFilterValue(fromDateWidget.getValue().getTime());
+              clientSessionPanel.setToDateFilterValue(toDateWidget.getValue().getTime());
+              clientSessionPanel.setVisible(clientSessionPanel.isSelfVisible());
+              clientSessionPanel.setToShowAsAccepted(isShowAcceptedCheckbox.getValue());
             }
           }
         });
       }
     };
-    updateCurrentStateTimer.scheduleRepeating(5000);
+    updateCurrentStateTimer.scheduleRepeating(2000);
 
-    verticalPanel = new VerticalPanel();
-    initWidget(verticalPanel);
+    mainPanel = new VerticalPanel();
+    initWidget(mainPanel);
 
-    verticalPanel.add(sessionsPanel);
+    mainPanel.add(sessionsPanel);
+
     sessionsPanel.setVisible(false);
     addClientSessionButton.setVisible(false);
 
-    horizontalPanel.add(addClientSessionButton);
+    addInfoPanel.add(addClientSessionButton);
 
     totalSumLabel.setVisible(false);
     totalSumLabel.addStyleName("total-sum-style");
-    horizontalPanel.add(totalSumLabel);
+    addInfoPanel.add(totalSumLabel);
 
-    final Timer updateTotalSumTimer = creatTotalSumTimer(sessionsPanel);
+    final Timer updateTotalSumTimer = createTotalSumTimer(sessionsPanel);
 
     verticalLoginPanel = new VerticalPanel();
 
-    horizontalPanel.add(verticalLoginPanel);
+    addInfoPanel.add(verticalLoginPanel);
 
 
-    verticalPanel.setWidth("100%");
-//    verticalPanel.setHeight("800px");
+    mainPanel.setWidth("100%");
 
-    verticalPanel.getElement().setId("mainPanel");
-    verticalPanel.addStyleName("main-panel-style");
-    verticalPanel.add(horizontalPanel);
+    mainPanel.getElement().setId("mainPanel");
+    mainPanel.addStyleName("main-panel-style");
+    mainPanel.add(addInfoPanel);
 
-    final Button logoutButton = new Button("Выход");
-    logoutButton.addStyleName("logout-button-style");
-    horizontalPanel.add(logoutButton);
-    logoutButton.addClickHandler(new ClickHandler() {
-      public void onClick(ClickEvent event) {
-//       MainPanel.this.setVisible(false);
-        verticalLoginPanel.setVisible(true);
-        verticalLoginPanel.addStyleName("vertical-login-panel");
-        addClientSessionButton.setVisible(false);
-        sessionsPanel.setVisible(false);
-        logoutButton.setVisible(false);
-        totalSumLabel.setVisible(false);
-        userNameInput.setValue("");
-//        totalSumLabel.setText("0.00");
-        updateTotalSumTimer.cancel();
-
-      }
-    });
+    createLogoutButton(addInfoPanel, updateTotalSumTimer);
 
     clientSessionPanelList = new ArrayList<ClientSessionPanel>();
 
@@ -169,7 +171,7 @@ public class MainPanel extends Composite {
     verticalLoginPanel.add(passwordInput);
 
     loginButton = new Button("Войти");
-    logoutButton.addStyleName("login-message");
+    loginButton.addStyleName("login-message");
     verticalLoginPanel.add(loginButton);
 
     loginButton.addClickHandler(new ClickHandler() {
@@ -184,84 +186,128 @@ public class MainPanel extends Composite {
         delaySumTimer.schedule(2000);
         sessionsPanel.setVisible(true);
         logoutButton.setVisible(true);
-//        userNameInput.setValue("could be any)");
         addClientSessionButton.setVisible(true);
         verticalLoginPanel.setVisible(false);
-        verticalPanel.setVisible(false);
-        verticalPanel.setVisible(true);
+        mainPanel.setVisible(false);
+        mainPanel.setVisible(true);
+        datesPanel.setVisible(true);
 
         logoutButton.setText("Выход пользователя " + " " + userNameInput.getValue());
-//        Timer updateTotalSumTimer = creatTotalSumTimer(sessionsPanel);
 
         if (userNameInput.getValue().equals("1")) {
           MainPanel.this.removeStyleName("second-admin-style");
           MainPanel.this.removeStyleName("super-admin-style");
-          verticalPanel.addStyleName("first-admin-style");
+          mainPanel.addStyleName("first-admin-style");
+          whoseSession = WhoseSessionEnum.FIRST;
         } else if (userNameInput.getValue().equals("2")) {
           MainPanel.this.removeStyleName("first-admin-style");
           MainPanel.this.removeStyleName("super-admin-style");
-          verticalPanel.addStyleName("second-admin-style");
+          mainPanel.addStyleName("second-admin-style");
+          whoseSession = WhoseSessionEnum.SECOND;
         } else if (userNameInput.getValue().equals("admin")) {
           MainPanel.this.removeStyleName("first-admin-style");
           MainPanel.this.removeStyleName("second-admin-style");
-          verticalPanel.addStyleName("super-admin-style");
+          mainPanel.addStyleName("super-admin-style");
+          whoseSession = WhoseSessionEnum.ADMIN;
+        } else {
+          MainPanel.this.removeStyleName("first-admin-style");
+          MainPanel.this.removeStyleName("second-admin-style");
+          MainPanel.this.removeStyleName("super-admin-style");
+          whoseSession = WhoseSessionEnum.NOBODY;
         }
 
         Iterator<Widget> vPanelWidgets = sessionsPanel.iterator();
         while (vPanelWidgets.hasNext()) {
           Widget childWidget = vPanelWidgets.next();
           if (childWidget instanceof ClientSessionPanel) {
-            boolean isCurrentlyFirst = verticalPanel.getStyleName().contains("first-admin-style");
-            boolean isCurrentlySecond = verticalPanel.getStyleName().contains("second-admin-style");
-            boolean isCurrentlyAdmin = verticalPanel.getStyleName().contains("super-admin-style");
-            ((ClientSessionPanel) childWidget).toggleStartStopButtonsAvailable();
-            if (isCurrentlyFirst) {
-              childWidget.setVisible(((ClientSessionPanel) childWidget).isFirstAdmin());
-              childWidget.removeStyleName("second-admin-style");
-              childWidget.removeStyleName("super-admin-style");
-              childWidget.addStyleName("first-admin-style");
-            } else if (isCurrentlySecond) {
-              childWidget.removeStyleName("first-admin-style");
-              childWidget.removeStyleName("super-admin-style");
-              childWidget.addStyleName("second-admin-style");
-              childWidget.setVisible(((ClientSessionPanel) childWidget).isSecondAdmin());
-            } else if (isCurrentlyAdmin) {
-              childWidget.removeStyleName("second-admin-style");
-              childWidget.removeStyleName("first-admin-style");
-              childWidget.addStyleName("super-admin-style");
-              childWidget.setVisible(true);
-            } else {
-              childWidget.removeStyleName("second-admin-style");
-              childWidget.removeStyleName("super-admin-style");
-              childWidget.removeStyleName("first-admin-style");
-              childWidget.setVisible(false);
-            }
+            resolveOwnerForSession(childWidget);
           }
         }
 //        addFirstClientToCheck();
       }
     });
 
-
     logoutButton.setVisible(false);
     sessionsPanel.setVisible(false);
+    datesPanel.setWidth("100%");
+    mainPanel.add(datesPanel);
+
+    isShowAcceptedCheckbox.addValueChangeHandler(new ValueChangeHandler<Boolean>() {
+      public void onValueChange(ValueChangeEvent<Boolean> event) {
+        Iterator<Widget> vPanelWidgets = sessionsPanel.iterator();
+        while (vPanelWidgets.hasNext()) {
+          Widget childWidget = vPanelWidgets.next();
+          if (childWidget instanceof ClientSessionPanel){
+            ((ClientSessionPanel) childWidget).setToShowAsAccepted(isShowAcceptedCheckbox.getValue());
+          }
+        }
+      }
+    });
+    isShowAcceptedCheckbox.addStyleName("is-show-as-accepted-style");
+    mainPanel.add(isShowAcceptedCheckbox);
 
   }
 
-  private void updatePanel(Client client) {
-    Iterator<Widget> vPanelWidgets = sessionsPanel.iterator();
-    while (vPanelWidgets.hasNext()){
+  public void createLogoutButton(HorizontalPanel addInfoPanel, final Timer updateTotalSumTimer) {
+    logoutButton = new Button("Выход");
+    logoutButton.addStyleName("logout-button-style");
+    addInfoPanel.add(logoutButton);
+    logoutButton.addClickHandler(new ClickHandler() {
+      public void onClick(ClickEvent event) {
+//       MainPanel.this.setVisible(false);
+        verticalLoginPanel.setVisible(true);
+        verticalLoginPanel.addStyleName("vertical-login-panel");
+        addClientSessionButton.setVisible(false);
+        sessionsPanel.setVisible(false);
+        logoutButton.setVisible(false);
+        totalSumLabel.setVisible(false);
+        userNameInput.setValue("");
+        updateTotalSumTimer.cancel();
+        datesPanel.setVisible(false);
 
+      }
+    });
+  }
+
+  public void setFromDateRangeValue() {
+    Iterator<Widget> vPanelWidgets = sessionsPanel.iterator();
+    while (vPanelWidgets.hasNext()) {
       Widget childWidget = vPanelWidgets.next();
-      if (childWidget instanceof ClientSessionPanel) {
-        if (((ClientSessionPanel) childWidget).getClientId() == client.getId()){
-          ((ClientSessionPanel) childWidget).setSuperAdmin(client.isSuperAdmin());
-          ((ClientSessionPanel) childWidget).setFirstAdmin(client.isFirstAdmin());
-          ((ClientSessionPanel) childWidget).setClientNameValue(client.getName());
-          ((ClientSessionPanel) childWidget).setClientCommentValue(client.getComment());
-        }
+      if (childWidget instanceof ClientSessionPanel){
+        ((ClientSessionPanel) childWidget).setFromDateFilterValue(fromDateWidget.getValue().getTime());
       }
     }
+  }
+
+  public void setToDateRangeValue() {
+    Iterator<Widget> vPanelWidgets = sessionsPanel.iterator();
+    while (vPanelWidgets.hasNext()) {
+      Widget childWidget = vPanelWidgets.next();
+      if (childWidget instanceof ClientSessionPanel){
+        ((ClientSessionPanel) childWidget).setToDateFilterValue(toDateWidget.getValue().getTime());
+      }
+    }
+  }
+
+  public void resolveOwnerForSession(Widget childWidget) {
+    if (whoseSession == WhoseSessionEnum.FIRST) {
+      childWidget.removeStyleName("second-admin-style");
+      childWidget.removeStyleName("super-admin-style");
+      childWidget.addStyleName("first-admin-style");
+    } else if (whoseSession == WhoseSessionEnum.SECOND) {
+      childWidget.removeStyleName("first-admin-style");
+      childWidget.removeStyleName("super-admin-style");
+      childWidget.addStyleName("second-admin-style");
+    } else if (whoseSession == WhoseSessionEnum.ADMIN) {
+      childWidget.removeStyleName("second-admin-style");
+      childWidget.removeStyleName("first-admin-style");
+      childWidget.addStyleName("super-admin-style");
+    } else {
+      childWidget.removeStyleName("second-admin-style");
+      childWidget.removeStyleName("super-admin-style");
+      childWidget.removeStyleName("first-admin-style");
+    }
+    ((ClientSessionPanel)childWidget).setWhoseSession(whoseSession);
   }
 
   private ClientSessionPanel getClientSessionByClientId(long id) {
@@ -278,53 +324,19 @@ public class MainPanel extends Composite {
     return null;
   }
 
-  private boolean isSessionAlreadyPresentOnPanel(Client client) {
-    Iterator<Widget> vPanelWidgets = sessionsPanel.iterator();
-    while (vPanelWidgets.hasNext()){
-
-      Widget childWidget = vPanelWidgets.next();
-      if (childWidget instanceof ClientSessionPanel) {
-        if (((ClientSessionPanel) childWidget).getClientId() == client.getId()) {
-          return true;
-        }
-      }
-    }
-    return false;
+   private void addSessionToUser(Client client) {
+      sessionsPanel.add(new ClientSessionPanel(whoseSession, client.getId(), client.getName(), client.getComment(), client.getStartTime(), client.isInProgress()));
   }
 
-  private void addSessionToUser(Client client, boolean isCurrentlyFirst, boolean isCurrentlySecond, boolean isCurrentlyAdmin, VerticalPanel sessionsPanel) {
-    if (isCurrentlyFirst) {
-      sessionsPanel.add(new ClientSessionPanel(client.getCreationalTime(), client.isSuperAdmin(), client.isFirstAdmin(), client.isSecondAdmin(),
-              client.getId(), client.getName(), client.getComment(), client.getStartTime(), client.getTotalSum(), client.isInProgress()));
-    } else if (isCurrentlySecond){
-      sessionsPanel.add(new ClientSessionPanel(client.getCreationalTime(), client.isSuperAdmin(), client.isFirstAdmin(), client.isSecondAdmin(),
-              client.getId(), client.getName(), client.getComment(), client.getStartTime(), client.getTotalSum(), client.isInProgress()));
-    } else if (isCurrentlyAdmin) {
-      sessionsPanel.add(new ClientSessionPanel(client.getCreationalTime(), client.isSuperAdmin(), client.isFirstAdmin(), client.isSecondAdmin(),
-              client.getId(), client.getName(), client.getComment(), client.getStartTime(), client.getTotalSum(), client.isInProgress()));
-    } else {
-      sessionsPanel.add(new ClientSessionPanel(client.getCreationalTime(), client.isSuperAdmin(), client.isFirstAdmin(), client.isSecondAdmin(),
-              client.getId(), client.getName(), client.getComment(), client.getStartTime(), client.getTotalSum(), client.isInProgress()));
-    }
-  }
-
-  private void addSessionToUser(boolean isCurrentlyFirst, boolean isCurrentlySecond, boolean isCurrentlyAdmin, VerticalPanel sessionsPanel) {
+  private void addSessionToUser() {
     final ClientSessionPanel clientSessionPanel;
-    if (isCurrentlyFirst) {
-      clientSessionPanel = new ClientSessionPanel(System.currentTimeMillis(), false, true, false, 0, "", "", 0, 0, false);
-      sessionsPanel.add(clientSessionPanel);
-    } else if (isCurrentlySecond){
-      clientSessionPanel = new ClientSessionPanel(System.currentTimeMillis(), false, false, true, 0, "", "", 0, 0, false);
-      sessionsPanel.add(clientSessionPanel);
-    } else if (isCurrentlyAdmin) {
-      clientSessionPanel = new ClientSessionPanel(System.currentTimeMillis(), true, false, false, 0, "", "", 0, 0, false);
-      sessionsPanel.add(clientSessionPanel);
-    } else {
-      clientSessionPanel = new ClientSessionPanel(System.currentTimeMillis(), false, false, false, 0, "", "", 0, 0, false);
-      sessionsPanel.add(clientSessionPanel);
-    }
-    clientsServiceAsync.addClient(isCurrentlyAdmin, isCurrentlyFirst, isCurrentlySecond, 0, "", "",
-            System.currentTimeMillis(), 0 , new AsyncCallback<Long>() {
+    clientSessionPanel = new ClientSessionPanel(whoseSession, 0, "", "", 0, false);
+    clientSessionPanel.setFromDateFilterValue(fromDateWidget.getValue().getTime());
+    clientSessionPanel.setToDateFilterValue(toDateWidget.getValue().getTime());
+    sessionsPanel.add(clientSessionPanel);
+
+    clientsServiceAsync.addClient(whoseSession, 0, "", "",
+            System.currentTimeMillis(), 0, new AsyncCallback<Long>() {
               public void onFailure(Throwable caught) {
                 // Show the RPC error message to the user
                 String s = "dfd";
@@ -336,30 +348,17 @@ public class MainPanel extends Composite {
             });
   }
 
-  private Timer creatTotalSumTimer(final VerticalPanel sessionsPanel) {
+  private Timer createTotalSumTimer(final VerticalPanel sessionsPanel) {
     final Timer updateTotalSumTimer = new Timer() {
       @Override
       public void run() {
-        boolean isCurrentlyFirst = verticalPanel.getStyleName().contains("first-admin-style");
-        boolean isCurrentlySecond = verticalPanel.getStyleName().contains("second-admin-style");
-        boolean isCurrentlyAdmin = verticalPanel.getStyleName().contains("super-admin-style");
         long totalSum = 0;
         Iterator<Widget> vPanelWidgets = sessionsPanel.iterator();
         while (vPanelWidgets.hasNext()){
 
-            Widget childWidget = vPanelWidgets.next();
-            if (childWidget instanceof ClientSessionPanel) {
-              if (isCurrentlyFirst) {
-                if (((ClientSessionPanel) childWidget).isFirstAdmin()) {
-                  totalSum += ((ClientSessionPanel) childWidget).getTotalSumCurrentValue();
-                }
-              } else if (isCurrentlySecond) {
-                if (((ClientSessionPanel) childWidget).isSecondAdmin()) {
-                  totalSum += ((ClientSessionPanel) childWidget).getTotalSumCurrentValue();
-                }
-              } else if (isCurrentlyAdmin) {
-                totalSum += ((ClientSessionPanel) childWidget).getTotalSumCurrentValue();
-              }
+          Widget childWidget = vPanelWidgets.next();
+          if (((ClientSessionPanel) childWidget).isSelfVisible()) {
+            totalSum += ((ClientSessionPanel) childWidget).getTotalSumCurrentValue();
           }
         }
         totalSumLabel.setText(getPrettyMoney(totalSum));
@@ -370,53 +369,33 @@ public class MainPanel extends Composite {
   }
 
   private void addFirstClientToCheck() {
-    clientsServiceAsync.addClient(false, true, false, 0, "Бах", "test comment", System.currentTimeMillis(), 1000, new AsyncCallback<Long>() {
+    clientsServiceAsync.addClient(WhoseSessionEnum.FIRST, 0, "Бах", "test comment", System.currentTimeMillis(), 1000, new AsyncCallback<Long>() {
       public void onFailure(Throwable caught) {
         String s = "dfd";
       }
 
       public void onSuccess(Long result) {
-        getExistingSessions();
+//        getExistingSessions();
       }
     });
   }
 
-  private void getExistingSessions() {
-    clientsServiceAsync.getClients(new AsyncCallback<ArrayList<toknow.shared.Client>>() {
-      public void onFailure(Throwable caught) {
-        String s = "dfd";
-      }
-
-      public void onSuccess(ArrayList<Client> result) {
-        boolean isCurrentlyFirst = verticalPanel.getStyleName().contains("first-admin-style");
-        boolean isCurrentlySecond = verticalPanel.getStyleName().contains("second-admin-style");
-        boolean isCurrentlyAdmin = verticalPanel.getStyleName().contains("super-admin-style");
-        for (Client client: result) {
-//          verticalPanel.insert(new ClientSessionPanel(verticalPanel.getStyleName().contains("super-admin-style"),
-//                  verticalPanel.getStyleName().contains("first-admin-style"),
-//                  verticalPanel.getStyleName().contains("second-admin-style"),
-//                  client.getId(), client.getName(), client.getComment(),
-//                  client.getStartTime(), client.getTotalSum()), 1);
-
-          addSessionToUser(client, client.isFirstAdmin(), client.isSecondAdmin(), client.isSuperAdmin(), sessionsPanel);
-        }
-      }
-    });
-  }
-
-  @Override
-  protected void onLoad() {
-    super.onLoad();
-//    for (ClientSessionPanel clientSessionPanel)
-  }
-
-  public List<ClientSessionPanel> getClientSessionPanelList() {
-    return clientSessionPanelList;
-  }
+//  private void getExistingSessions() {
+//    clientsServiceAsync.getClients(new AsyncCallback<ArrayList<toknow.shared.Client>>() {
+//      public void onFailure(Throwable caught) {
+//        String s = "dfd";
+//      }
+//
+//      public void onSuccess(ArrayList<Client> result) {
+//        for (Client client: result) {
+//          addSessionToUser(client);
+//        }
+//      }
+//    });
+//  }
 
   private String getPrettyMoney(long minPayment) {
     return new BigDecimal(minPayment).divide(new BigDecimal("100")).setScale(2, BigDecimal.ROUND_HALF_UP).toString();
   }
-
 
 }

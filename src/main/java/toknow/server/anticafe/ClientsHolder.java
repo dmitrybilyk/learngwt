@@ -4,6 +4,7 @@ import org.quartz.*;
 import org.quartz.impl.StdSchedulerFactory;
 import toknow.server.anticafe.spring.quartz.HelloJob;
 import toknow.shared.Client;
+import toknow.shared.WhoseSessionEnum;
 
 import java.util.*;
 
@@ -23,14 +24,14 @@ public class ClientsHolder {
   }
 
   private Map<Long, Client> clientMap = new LinkedHashMap<Long, Client>();
-  public Long addClient(boolean isSuperAdmin, boolean isFirstAdmin, boolean isSecondAdmin, long id, String name, String comment, long startTime, long sum) {
+  public Long addClient(WhoseSessionEnum whoseSession, long id, String name, String comment, long startTime, long sum) {
     long nextId = getClientId();
 //    try {
 //      runQuartz();
 //    } catch (SchedulerException e) {
 //      e.printStackTrace();
 //    }
-    clientMap.put(nextId, new Client(false, isSuperAdmin, isFirstAdmin, isSecondAdmin, nextId, name, comment, startTime, sum));
+    clientMap.put(nextId, new Client(whoseSession, nextId, name, comment, startTime));
     return nextId;
   }
 

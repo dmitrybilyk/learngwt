@@ -316,3 +316,9 @@ body {
 .disabled-style {
     opacity: 0.4;
 }
+
+.is-show-as-accepted-style label {
+    color: #ffe5ec;
+    font-size: 16px;
+    margin: 10px;
+}

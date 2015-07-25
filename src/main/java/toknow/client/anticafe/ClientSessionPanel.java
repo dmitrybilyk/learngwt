@@ -6,12 +6,15 @@ import com.google.gwt.event.dom.client.ChangeEvent;
 import com.google.gwt.event.dom.client.ChangeHandler;
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.event.dom.client.ClickHandler;
+import com.google.gwt.event.dom.client.KeyUpEvent;
+import com.google.gwt.event.dom.client.KeyUpHandler;
 import com.google.gwt.event.logical.shared.ValueChangeEvent;
 import com.google.gwt.event.logical.shared.ValueChangeHandler;
 import com.google.gwt.media.client.Audio;
 import com.google.gwt.user.client.Timer;
 import com.google.gwt.user.client.rpc.AsyncCallback;
 import com.google.gwt.user.client.ui.*;
+import toknow.shared.WhoseSessionEnum;
 
 import java.math.BigDecimal;
 
@@ -21,69 +24,41 @@ import java.math.BigDecimal;
  */
 public class ClientSessionPanel extends Composite {
 
-//  private boolean superAdmin;
-//  public ClientSessionPanel(long id, String name, String comment, long totalTime, long totalSum) {
-//    this.clientId = id;
-//    this.clientNameInput.setText(name);
-//    this.clientCommentInput.setText(comment);
-//    this.totalTimeValue.setText(getMinutesString(totalTime));
-//    this.totalSumValue.setText(getPrettyMoney(totalSum));
-//  }
-
-  public long getClientId() {
-    return clientId;
-  }
-
-  public void setClientId(long clientId) {
-    this.clientId = clientId;
-  }
+  private long clientId;
 
   private Audio notificationEmailAudio;
 
-  private long clientId;
   private long creationalTime;
 
-  public long getCreationalTime() {
-    return creationalTime;
-  }
 
-  public void setCreationalTime(long creationalTime) {
-    this.creationalTime = creationalTime;
-  }
-
+  private WhoseSessionEnum whoseSession;
+  private WhoseSessionEnum whoIsOwner;
+  final Label totalTimeValue = new Label("00:00:00");
   private HorizontalPanel mainPanel;
   private Label clientNameLabel;
   private ListBox clientNameInput;
 //  private TextBox clientNameInput;
   private ListBox whoseBox;
-
   private Label commentLabel;
   private TextArea clientCommentInput;
   private CheckBox remindAfterCheckBox;
   private TextBox remindAfterInput;
-  private TextBox remindAfterMinutes;
   private Button startSessionButton;
-  private Label totalTimeLabel;
-  private Button checkLeftTimeButton;
   private Button closeTheSessionButton;
   private Button stopSessionButton;
-  private Label clientStartTimeLabel;
-  private Label clientEndTimeLabel;
-  private Label leftTimeLabel;
-  private Label defaultHoursLabel;
-  private Label overTimeHoursLabel;
-  private Label totalTimeValue;
   private Label totalSumLabel;
   private Label totalSumValue;
   private Timer remindAfterTimer;
   private Timer remindTimeTimer;
-  private Timer refreshTotalSumTimer;
+  private Timer updateTotalsTimer;
+  private Timer updateCurrentStateTimer;
   private long scheduledToRemindTime = 10000; // remind in 100 seconds
   private long startTime;
 
-  public void setStartTime(long startTime) {
-    this.startTime = startTime;
-  }
+  private boolean isToShowAsAccepted;
+  private boolean isSelfVisible;
+  private long fromDateFilterValue;
+  private long toDateFilterValue;
 
   private long finishTime;
   private long minTime = 60000; // minimum period 1 minutes
@@ -97,10 +72,6 @@ public class ClientSessionPanel extends Composite {
   public long getTotalSumCurrentValue() {
     return totalSumCurrentValue;
   }
-
-  private boolean isFirstAdmin;
-  private boolean isSecondAdmin;
-  private boolean isSuperAdmin;
 
   private boolean isInProgress;
   private boolean isAccepted;
@@ -121,22 +92,13 @@ public class ClientSessionPanel extends Composite {
     this.isAccepted = isAccepted;
   }
 
-  public boolean isFirstAdmin() {
-    return isFirstAdmin;
-  }
-
-  public void setFirstAdmin(boolean isFirstAdmin) {
-    this.isFirstAdmin = isFirstAdmin;
-  }
-
-  public ClientSessionPanel(long creationalTime, final boolean isSuperAdmin, final boolean isFirstAdmin, final boolean isSecondAdmin, long id, String name, String comment, final long startTime, long totalSum, boolean inProgress) {
-
-    this.creationalTime = creationalTime;
+  public ClientSessionPanel(WhoseSessionEnum whoseSession, long id, String name, String comment, final long startTime, boolean inProgress) {
+    this.whoseSession = whoseSession;
+    this.whoIsOwner = whoseSession;
+    this.creationalTime = System.currentTimeMillis();
     notificationEmailAudio = Audio.createIfSupported();
     notificationEmailAudio.setSrc("sounds/email_notification.wav");
-    this.isFirstAdmin = isFirstAdmin;
-    this.isSuperAdmin = isSuperAdmin;
-    this.isSecondAdmin = isSecondAdmin;
+    this.isInProgress = inProgress;
     this.clientId = id;
     mainPanel = new HorizontalPanel();
     initWidget(mainPanel);
@@ -145,223 +107,131 @@ public class ClientSessionPanel extends Composite {
     mainPanel.addStyleName("session-panel");
 
 
-    whoseBox = new ListBox();
-    whoseBox.setWidth("35px");
-    whoseBox.addStyleName("custom-input");
-    whoseBox.addItem(WhoseSessionEnum.FIRST.getShortName());
-    whoseBox.addItem(WhoseSessionEnum.SECOND.getShortName());
-    whoseBox.addItem(WhoseSessionEnum.ADMIN.getShortName());
-    if (isSuperAdmin) {
-      whoseBox.setSelectedIndex(2);
-    } else if (isFirstAdmin) {
-      whoseBox.setSelectedIndex(0);
-    } else if (isSecondAdmin) {
-      whoseBox.setSelectedIndex(1);
-    }
-
-    whoseBox.addChangeHandler(new ChangeHandler() {
-      public void onChange(ChangeEvent event) {
-       ClientSessionPanel.this.isFirstAdmin = false;
-       ClientSessionPanel.this.isSecondAdmin = false;
-       ClientSessionPanel.this.isSuperAdmin = false;
-        if (whoseBox.getSelectedIndex() == 0) {
-          ClientSessionPanel.this.isFirstAdmin = true;
-        } else if (whoseBox.getSelectedIndex() == 1) {
-          ClientSessionPanel.this.isSecondAdmin = true;
-        } else if (whoseBox.getSelectedIndex() == 2) {
-          ClientSessionPanel.this.isSuperAdmin = true;
-        }
-        clientsServiceAsync.updateSessionOwner(clientId, ClientSessionPanel.this.isSuperAdmin,
-                ClientSessionPanel.this.isFirstAdmin, ClientSessionPanel.this.isSecondAdmin, new AsyncCallback<Void>() {
-                  public void onFailure(Throwable caught) {
-                    String s = "dfsddf";
-                  }
-
-                  public void onSuccess(Void result) {
-                    System.out.println("client is updated");
-                  }
-                });
-      }
-    });
-
+    createWhoseBox();
     mainPanel.add(whoseBox);
 
-    clientNameLabel = new Label("Имя: ");
-    clientNameLabel.addStyleName("name-label");
+    createClientNameLabel();
     mainPanel.add(clientNameLabel);
 
-    clientNameInput = new ListBox();
-    clientNameInput.setWidth("150px");
-    clientNameInput.addStyleName("custom-input");
-    clientNameInput.addItem("Выберите имя");
-//    clientNameInput.setSeValue(0, "Выберите имя");
-    clientNameInput.addItem("Моцарт");
-    clientNameInput.addItem("Бах");
-    clientNameInput.addItem("Билык");
-//    int foundIndex = 0;
-    setClientNameValue(name);
+    createClientNameListBox(name);
 
-    if (isSuperAdmin) {
-      whoseBox.setSelectedIndex(2);
-    } else if (isFirstAdmin) {
-      whoseBox.setSelectedIndex(0);
-    } else if (isSecondAdmin) {
-      whoseBox.setSelectedIndex(1);
-    }
+    setProperOwner();
 //    clientNameInput.getElement().getStyle().setBackgroundColor("blue");
     mainPanel.add(clientNameInput);
 
-    commentLabel = new Label("Комментарий: ");
-    commentLabel.addStyleName("name-label");
+    createCommentLabel();
     mainPanel.add(commentLabel);
 
-    clientCommentInput = new TextArea();
-    clientCommentInput.addStyleName("custom-input");
-    clientCommentInput.setWidth("170px");
-    clientCommentInput.setHeight("30px");
-    clientCommentInput.setText(comment);
+    createCommentInput(comment);
     mainPanel.add(clientCommentInput);
 
-    remindAfterCheckBox = new CheckBox();
-    remindAfterCheckBox.addStyleName("custom-checkbox");
-    remindAfterCheckBox.addValueChangeHandler(new ValueChangeHandler<Boolean>() {
-      public void onValueChange(ValueChangeEvent<Boolean> event) {
-        remindAfterInput.setEnabled(remindAfterCheckBox.getValue());
-        if (!remindAfterCheckBox.getValue()) {
-          remindAfterTimer.cancel();
-        }
-      }
-    });
-
-    Label remindLabel = new Label();
-    remindLabel.addStyleName("remind-style");
+    createRemindAfterCheckBox();
+    Label remindLabel = createRemindLabel();
     mainPanel.add(remindLabel);
     mainPanel.add(remindAfterCheckBox);
 
-    final Label remindAfterLabel = new Label("через: ");
-    remindAfterLabel.addStyleName("name-label");
-    mainPanel.add(remindAfterLabel);
-    remindAfterInput = new TextBox();
-//    remindAfterInput.addKeyPressHandler(new KeyPressHandler() {
-////      @Override
-//      public void onKeyPress(KeyPressEvent event) {
-//        String input = remindAfterInput.getText();
-//        if (!input.matches("[0-9]*")) {
-//          // show some error
-//          remindAfterInput.cancelKey();
-//          return;
-//        }
-//        // do your thang
-//      }
-//    });
-    remindAfterInput.addStyleName("remind-input");
-    remindAfterInput.setValue(String.valueOf(scheduledToRemindTime / 1000));
-    remindAfterInput.setWidth("50px");
-    remindAfterInput.setEnabled(false);
+//    final Label remindAfterLabel = new Label("через: ");
+//    remindAfterLabel.addStyleName("name-label");
+//    mainPanel.add(remindAfterLabel);
+    createRemindAfterInput();
     mainPanel.add(remindAfterInput);
-    Label minutesLabel = new Label("мин.");
-    minutesLabel.addStyleName("name-label");
-    mainPanel.add(minutesLabel);
-
-    startSessionButton = new Button();
-    startSessionButton.addStyleName("start-button");
-    startSessionButton.setTitle("Старт");
-//    mainPanel.add(startSessionButton);
+//    Label minutesLabel = new Label("мин.");
+//    minutesLabel.addStyleName("name-label");
+//    mainPanel.add(minutesLabel);
 
     final Label totalTimeLabel = new Label();
     totalTimeLabel.addStyleName("total-time-style");
     totalTimeLabel.addStyleName("time-style");
     mainPanel.add(totalTimeLabel);
 
-    final Label totalTimeValue = new Label("00:00:00");
     totalTimeValue.addStyleName("total-time-style");
     mainPanel.add(totalTimeValue);
 
-    startSessionButton.addClickHandler(new ClickHandler() {
-      public void onClick(ClickEvent event) {
-
-//        if (clientId == 0) {
-          ClientSessionPanel.this.startTime = System.currentTimeMillis();
-          clientsServiceAsync.startSession(clientId, ClientSessionPanel.this.startTime,  new AsyncCallback<Void>() {
-                    public void onFailure(Throwable caught) {
-                      // Show the RPC error message to the user
-                      String s = "dfd";
-                    }
-
-                    public void onSuccess(Void result) {
-//                      clientId = result;
-                      startSessionButton.setEnabled(false);
-                      startSessionButton.addStyleName("disabled-style");
-                      stopSessionButton.setEnabled(true);
-                      stopSessionButton.removeStyleName("disabled-style");
-                      refreshTotalSumTimer.scheduleRepeating(1000);
-                    }
-                  });
-//        } else {
-//          refreshTotalSumTimer.scheduleRepeating(1000);
-//        }
-
-
-        finishTime = ClientSessionPanel.this.startTime + Long.valueOf(remindAfterInput.getValue()) * 1000;
-
-        remindTimeTimer = new Timer() {
-          @Override
-          public void run() {
-            long timeLeft = finishTime - System.currentTimeMillis();
-            if (timeLeft > 0) {
-              remindAfterInput.setText(getMinutesString(timeLeft));
-            } else {
-              notificationEmailAudio.play();
-              remindAfterInput.setText("ALERT");
-              remindAfterInput.getElement().getStyle().setBackgroundColor("red");
-              remindTimeTimer.cancel();
-            }
-          }
-        };
-        if (remindAfterCheckBox.getValue()) {
-          remindTimeTimer.scheduleRepeating(1000);
-        }
-
-        refreshTotalSumTimer.scheduleRepeating(1000);
-      }
-    });
+    createStartSessionButton();
     createTotalSumSection();
 
     this.startTime = startTime;
-    refreshTotalSumTimer = new Timer() {
-      @Override
-      public void run() {
-        updateTotalSum(totalTimeValue);
-      }
-    };
-    if (clientId != 0) {
-      currentTimeValue = System.currentTimeMillis() - this.startTime;
-      totalTimeValue.setText(getMinutesString(currentTimeValue));
-      long currentIntervalSeconds = getSeconds(currentTimeValue);
-      if (currentIntervalSeconds <= getSeconds(minTime)) {
-//          totalSumCurrentValue = minPayment;
-        totalSumValue.setText(getPrettyMoney(minPayment));
-        totalSumCurrentValue = minPayment;
-      } else {
-
-//            BigDecimal totalSum = BigDecimal.valueOf(totalSumCurrentValue + 50);
-//            totalSumCurrentValue = totalSum.longValue();
-          totalSum = minPayment + 50 * (currentIntervalSeconds - minTime / 1000) / 60;
-          totalSumCurrentValue = totalSum;
-          totalSumValue.setText(getPrettyMoney(totalSum));
-      }
-
-//      if (getSeconds(currentTimeValue) < maxLength/ 1000) {
-      if (inProgress) {
-        refreshTotalSumTimer.scheduleRepeating(1000);
-      } else {
-        stopSessionOnServer();
-      }
-    }
+    createUpdateCurrentStateTimer();
+    updateCurrentStateTimer.scheduleRepeating(1000);
+    createRefreshTotalSumTimer();
+//    if (clientId != 0) {
+//      currentTimeValue = System.currentTimeMillis() - this.startTime;
+//      totalTimeValue.setText(getMinutesString(currentTimeValue));
+//      long currentIntervalSeconds = getSeconds(currentTimeValue);
+//      if (currentIntervalSeconds <= getSeconds(minTime)) {
+////          totalSumCurrentValue = minPayment;
+//        totalSumValue.setText(getPrettyMoney(minPayment));
+//        totalSumCurrentValue = minPayment;
+//      } else {
+//
+////            BigDecimal totalSum = BigDecimal.valueOf(totalSumCurrentValue + 50);
+////            totalSumCurrentValue = totalSum.longValue();
+//          totalSum = minPayment + 50 * (currentIntervalSeconds - minTime / 1000) / 60;
+//          totalSumCurrentValue = totalSum;
+//          totalSumValue.setText(getPrettyMoney(totalSum));
+//      }
+//
+////      if (getSeconds(currentTimeValue) < maxLength/ 1000) {
+//      if (isInProgress) {
+//        updateTotalsTimer.scheduleRepeating(1000);
+//      } else {
+//        stopSessionOnServer();
+//      }
+//    }
 
 
 
     mainPanel.add(startSessionButton);
+    createStopSessionButton();
+    mainPanel.add(stopSessionButton);
+
+    createCloseSessionButton();
+    mainPanel.add(closeTheSessionButton);
+    toggleStartStopButtonsAvailability();
+  }
+
+  public void createRefreshTotalSumTimer() {
+    updateTotalsTimer = new Timer() {
+      @Override
+      public void run() {
+        updateTotalSum();
+      }
+    };
+  }
+
+  public void createUpdateCurrentStateTimer() {
+    updateCurrentStateTimer = new Timer() {
+      @Override
+      public void run() {
+        updateCurrentState();
+      }
+    };
+  }
+
+  public void createCloseSessionButton() {
+    closeTheSessionButton = new Button();
+    closeTheSessionButton.addStyleName("remove-button");
+    closeTheSessionButton.setTitle("В архив");
+    closeTheSessionButton.addClickHandler(new ClickHandler() {
+      public void onClick(ClickEvent event) {
+        clientsServiceAsync.acceptSession(clientId, new AsyncCallback<Void>() {
+          public void onFailure(Throwable caught) {
+            String s = "dfd";
+          }
+
+          public void onSuccess(Void result) {
+            ClientSessionPanel.this.setAccepted(true);
+            ClientSessionPanel.this.setVisible(resolveSelfVisibility());
+
+            System.out.println("accepted");
+          }
+        });
+//        ClientSessionPanel.this.removeFromParent();
+      }
+    });
+  }
+
+  public void createStopSessionButton() {
     stopSessionButton = new Button();
     stopSessionButton.addStyleName("stop-button");
     stopSessionButton.setEnabled(false);
@@ -376,38 +246,185 @@ public class ClientSessionPanel extends Composite {
           }
 
           public void onSuccess(Void result) {
-            stopSessionButton.setEnabled(false);
-            stopSessionButton.addStyleName("disabled-style");
-            startSessionButton.setEnabled(true);
-            startSessionButton.removeStyleName("disabled-style");
+            ClientSessionPanel.this.isInProgress = false;
+            toggleStartStopButtonsAvailability();
           }
         });
 
       }
     });
-    mainPanel.add(stopSessionButton);
+  }
 
-toggleStartStopButtonsAvailable();
-
-    closeTheSessionButton = new Button();
-    closeTheSessionButton.addStyleName("remove-button");
-    closeTheSessionButton.setTitle("В архив");
-    closeTheSessionButton.addClickHandler(new ClickHandler() {
+  public void createStartSessionButton() {
+    startSessionButton = new Button();
+    startSessionButton.addStyleName("start-button");
+    startSessionButton.setTitle("Старт");
+    startSessionButton.addClickHandler(new ClickHandler() {
       public void onClick(ClickEvent event) {
-        clientsServiceAsync.acceptSession(clientId, new AsyncCallback<Void>() {
-          public void onFailure(Throwable caught) {
-            String s = "dfd";
-          }
 
-          public void onSuccess(Void result) {
-            ClientSessionPanel.this.setVisible(false);
-            System.out.println("accepted");
+          ClientSessionPanel.this.startTime = System.currentTimeMillis();
+          clientsServiceAsync.startSession(clientId, ClientSessionPanel.this.startTime,  new AsyncCallback<Void>() {
+                    public void onFailure(Throwable caught) {
+                      // Show the RPC error message to the user
+                      String s = "dfd";
+                    }
+
+                    public void onSuccess(Void result) {
+//                      clientId = result;
+                      ClientSessionPanel.this.isInProgress = true;
+//                      updateTotalsTimer.scheduleRepeating(1000);
+//                      toggleStartStopButtonsAvailability();
+                    }
+                  });
+
+        finishTime = ClientSessionPanel.this.startTime + Long.valueOf(remindAfterInput.getValue()) * 1000;
+
+        remindTimeTimer = new Timer() {
+          @Override
+          public void run() {
+            long timeLeft = finishTime - System.currentTimeMillis();
+            if (timeLeft > 0) {
+              remindAfterInput.setText(getMinutesString(timeLeft));
+            } else {
+              notificationEmailAudio.play();
+              remindAfterInput.setText("ALERT");
+              remindAfterCheckBox.setValue(false);
+//              remindAfterInput.getElement().getStyle().setBackgroundColor("red");
+              remindTimeTimer.cancel();
+            }
           }
-        });
-        ClientSessionPanel.this.removeFromParent();
+        };
+        if (remindAfterCheckBox.getValue()) {
+          remindTimeTimer.scheduleRepeating(1000);
+        }
+
+        updateTotalsTimer.scheduleRepeating(1000);
       }
     });
-    mainPanel.add(closeTheSessionButton);
+  }
+
+  public void createRemindAfterInput() {
+    remindAfterInput = new TextBox();
+    remindAfterInput.addStyleName("remind-input");
+    remindAfterInput.setValue(String.valueOf(scheduledToRemindTime / 1000));
+    remindAfterInput.setWidth("50px");
+    remindAfterInput.setEnabled(false);
+  }
+
+  public Label createRemindLabel() {
+    Label remindLabel = new Label();
+    remindLabel.addStyleName("remind-style");
+    return remindLabel;
+  }
+
+  public void createRemindAfterCheckBox() {
+    remindAfterCheckBox = new CheckBox();
+    remindAfterCheckBox.addStyleName("custom-checkbox");
+    remindAfterCheckBox.addValueChangeHandler(new ValueChangeHandler<Boolean>() {
+      public void onValueChange(ValueChangeEvent<Boolean> event) {
+//        remindAfterInput.setEnabled(remindAfterCheckBox.getValue());
+        if (!remindAfterCheckBox.getValue()) {
+          remindAfterTimer.cancel();
+        } else {
+          if (updateTotalsTimer.isRunning()) {
+            remindTimeTimer.schedule(Integer.valueOf(remindAfterInput.getValue()));
+          }
+        }
+      }
+    });
+  }
+
+  public void createCommentInput(String comment) {
+    clientCommentInput = new TextArea();
+    clientCommentInput.addStyleName("custom-input");
+    clientCommentInput.setWidth("170px");
+    clientCommentInput.setHeight("30px");
+    clientCommentInput.setText(comment);
+    clientCommentInput.addKeyUpHandler(new KeyUpHandler() {
+      public void onKeyUp(KeyUpEvent event) {
+        updateSession();
+      }
+
+    });
+  }
+
+  public void createCommentLabel() {
+    commentLabel = new Label("Комментарий: ");
+    commentLabel.addStyleName("name-label");
+  }
+
+  public void setProperOwner() {
+    if (WhoseSessionEnum.ADMIN == whoIsOwner) {
+      whoseBox.setSelectedIndex(2);
+    } else if (WhoseSessionEnum.FIRST == whoIsOwner) {
+      whoseBox.setSelectedIndex(0);
+    } else if (WhoseSessionEnum.SECOND == whoIsOwner) {
+      whoseBox.setSelectedIndex(1);
+    }
+  }
+
+  public void createClientNameListBox(String name) {
+    clientNameInput = new ListBox();
+    clientNameInput.setWidth("150px");
+    clientNameInput.addStyleName("custom-input");
+    clientNameInput.addItem("Выберите имя");
+    clientNameInput.addItem("Моцарт");
+    clientNameInput.addItem("Бах");
+    clientNameInput.addItem("Билык");
+    clientNameInput.addChangeHandler(new ChangeHandler() {
+      public void onChange(ChangeEvent event) {
+        updateSession();
+      }
+    });
+    setClientNameValue(name);
+  }
+
+  public void createClientNameLabel() {
+    clientNameLabel = new Label("Имя: ");
+    clientNameLabel.addStyleName("name-label");
+  }
+
+  public void createWhoseBox() {
+    whoseBox = new ListBox();
+    whoseBox.setWidth("35px");
+    whoseBox.addStyleName("custom-input");
+    whoseBox.addItem(WhoseSessionEnum.FIRST.getShortName());
+    whoseBox.addItem(WhoseSessionEnum.SECOND.getShortName());
+    whoseBox.addItem(WhoseSessionEnum.ADMIN.getShortName());
+    setProperOwner();
+
+    whoseBox.addChangeHandler(new ChangeHandler() {
+      public void onChange(ChangeEvent event) {
+        if (whoseBox.getSelectedIndex() == 0) {
+          whoIsOwner = WhoseSessionEnum.FIRST;
+        } else if (whoseBox.getSelectedIndex() == 1) {
+          whoIsOwner = WhoseSessionEnum.SECOND;
+        } else if (whoseBox.getSelectedIndex() == 2) {
+          whoIsOwner = WhoseSessionEnum.ADMIN;
+        }
+        clientsServiceAsync.updateSessionOwner(clientId, whoIsOwner, new AsyncCallback<Void>() {
+                  public void onFailure(Throwable caught) {
+                    String s = "dfsddf";
+                  }
+
+                  public void onSuccess(Void result) {
+                    System.out.println("client is updated");
+                  }
+                });
+      }
+    });
+  }
+
+  public void updateSession() {
+    clientsServiceAsync.updateSession(clientId, getClientNameValue(), clientCommentInput.getValue(), new AsyncCallback<Void>() {
+      public void onFailure(Throwable caught) {
+        String s = "fdsfsd";
+      }
+
+      public void onSuccess(Void result) {
+        System.out.println("Session is updated");
+      }
+    });
   }
 
   public void setClientNameValue(String name) {
@@ -416,6 +433,10 @@ toggleStartStopButtonsAvailable();
         clientNameInput.setSelectedIndex(i);
       }
     }
+  }
+
+  public String getClientNameValue() {
+    return clientNameInput.getValue(clientNameInput.getSelectedIndex());
   }
 
   public void setClientCommentValue(String commentValue) {
@@ -429,6 +450,7 @@ toggleStartStopButtonsAvailable();
       }
 
       public void onSuccess(Void result) {
+//        totalTimeValue.setText("00:00:00");
         System.out.println("Session is stopped");
       }
     });
@@ -438,17 +460,19 @@ toggleStartStopButtonsAvailable();
     if (remindTimeTimer != null && remindTimeTimer.isRunning()) {
       remindTimeTimer.cancel();
     }
-    refreshTotalSumTimer.cancel();
+    updateTotalsTimer.cancel();
+    toggleStartStopButtonsAvailability();
   }
 
   public void startSession() {
     if (remindTimeTimer != null && remindTimeTimer.isRunning()) {
       remindTimeTimer.cancel();
     }
-    refreshTotalSumTimer.scheduleRepeating(1000);
+    updateTotalsTimer.scheduleRepeating(1000);
+    toggleStartStopButtonsAvailability();
   }
 
-  private void updateTotalSum(Label totalTimeValue) {
+  private void updateTotalSum() {
     currentTimeValue = System.currentTimeMillis() - this.startTime;
     totalTimeValue.setText(getMinutesString(currentTimeValue));
     long currentIntervalSeconds = getSeconds(currentTimeValue);
@@ -473,6 +497,39 @@ toggleStartStopButtonsAvailable();
       }
     }
   }
+
+
+  private void updateCurrentState() {
+
+    if (this.isInProgress && !updateTotalsTimer.isRunning()) {
+      updateTotalsTimer.scheduleRepeating(1000);
+    } else if (!this.isInProgress) {
+      updateTotalsTimer.cancel();
+    }
+    toggleStartStopButtonsAvailability();
+
+    resolveSelfVisibility();
+
+  }
+
+  private boolean resolveSelfVisibility() {
+
+    boolean isVisibleByAccept = false;
+    if (!this.isAccepted || isToShowAsAccepted) {
+      isVisibleByAccept = true;
+    }
+
+    long creationalTimeDay = creationalTime / 1000 / 60 / 60 / 24;
+    boolean isVisibleByDate = creationalTimeDay >= fromDateFilterValue/ 1000 / 60 / 60 / 24 && creationalTimeDay <= toDateFilterValue/ 1000 / 60 / 60 / 24 + 1;
+
+    boolean isVisibleByOwner = this.whoseSession == WhoseSessionEnum.ADMIN || this.whoseSession == this.whoIsOwner;
+
+    isSelfVisible = isVisibleByAccept && isVisibleByDate && isVisibleByOwner;
+
+    ClientSessionPanel.this.setVisible(isSelfVisible);
+    return isSelfVisible;
+  }
+
 
   private void createTotalSumSection() {
     totalSumLabel = new Label();
@@ -511,26 +568,11 @@ toggleStartStopButtonsAvailable();
     return timeUnit<10? "0"+timeUnit: String.valueOf(timeUnit);
   }
 
-  public boolean isSecondAdmin() {
-    return isSecondAdmin;
-  }
-
-  public void setSecondAdmin(boolean secondAdmin) {
-    this.isSecondAdmin = secondAdmin;
-  }
-
-  public boolean isSuperAdmin() {
-    return isSuperAdmin;
-  }
-
-  public void setSuperAdmin(boolean superAdmin) {
-    this.isSuperAdmin = superAdmin;
-  }
-
-  public void toggleStartStopButtonsAvailable() {
-    stopSessionButton.setEnabled(isInProgress);
-    startSessionButton.setEnabled(!isInProgress);
-    if (isInProgress) {
+  public void toggleStartStopButtonsAvailability() {
+    boolean isCountInProgress = updateTotalsTimer.isRunning();
+    stopSessionButton.setEnabled(isCountInProgress);
+    startSessionButton.setEnabled(!isCountInProgress);
+    if (isCountInProgress) {
       stopSessionButton.removeStyleName("disabled-style");
       startSessionButton.addStyleName("disabled-style");
     } else {
@@ -540,4 +582,73 @@ toggleStartStopButtonsAvailable();
   }
 
 
+  public long getClientId() {
+    return clientId;
+  }
+
+  public void setClientId(long clientId) {
+    this.clientId = clientId;
+  }
+
+  public long getCreationalTime() {
+    return creationalTime;
+  }
+
+  public void setCreationalTime(long creationalTime) {
+    this.creationalTime = creationalTime;
+  }
+
+
+  public void setStartTime(long startTime) {
+    this.startTime = startTime;
+  }
+
+  public boolean isToShowAsAccepted() {
+    return isToShowAsAccepted;
+  }
+
+  public void setToShowAsAccepted(boolean isToShowAsAccepted) {
+    this.isToShowAsAccepted = isToShowAsAccepted;
+  }
+
+  public long getFromDateFilterValue() {
+    return fromDateFilterValue;
+  }
+
+  public void setFromDateFilterValue(long fromDateFilterValue) {
+    this.fromDateFilterValue = fromDateFilterValue;
+  }
+
+  public long getToDateFilterValue() {
+    return toDateFilterValue;
+  }
+
+  public void setToDateFilterValue(long toDateFilterValue) {
+    this.toDateFilterValue = toDateFilterValue;
+  }
+
+
+  public WhoseSessionEnum getWhoseSession() {
+    return whoseSession;
+  }
+
+  public void setWhoseSession(WhoseSessionEnum whoseSession) {
+    this.whoseSession = whoseSession;
+  }
+
+  public boolean isSelfVisible() {
+    return isSelfVisible;
+  }
+
+  public void setSelfVisible(boolean isSelfVisible) {
+    this.isSelfVisible = isSelfVisible;
+  }
+
+  public WhoseSessionEnum getWhoIsOwner() {
+    return whoIsOwner;
+  }
+
+  public void setWhoIsOwner(WhoseSessionEnum whoIsOwner) {
+    this.whoIsOwner = whoIsOwner;
+  }
 }
