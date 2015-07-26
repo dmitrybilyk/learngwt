@@ -39,6 +39,7 @@ public class MainPanel extends Composite {
 
   private Button addClientSessionButton;
   private VerticalPanel mainPanel;
+  private HorizontalPanel mostMainPanel;
   private List<ClientSessionPanel> clientSessionPanelList;
   private final ClientsServiceAsync clientsServiceAsync = GWT.create(ClientsService.class);
 
@@ -115,6 +116,8 @@ public class MainPanel extends Composite {
               clientSessionPanel.setInProgress(client.isInProgress());
               clientSessionPanel.setWhoIsOwner(client.getWhoseSession());
               clientSessionPanel.setWhoseSession(whoseSession);
+              clientSessionPanel.setProperOwner();
+//              clientSessionPanel.updateTotalSum();
               clientSessionPanel.setFromDateFilterValue(fromDateWidget.getValue().getTime());
               clientSessionPanel.setToDateFilterValue(toDateWidget.getValue().getTime());
               clientSessionPanel.setVisible(clientSessionPanel.isSelfVisible());
@@ -127,7 +130,15 @@ public class MainPanel extends Composite {
     updateCurrentStateTimer.scheduleRepeating(2000);
 
     mainPanel = new VerticalPanel();
-    initWidget(mainPanel);
+    mainPanel.addStyleName("default-color");
+    mostMainPanel = new HorizontalPanel();
+    mostMainPanel.addStyleName("main-panel");
+    initWidget(mostMainPanel);
+
+    verticalLoginPanel = new VerticalPanel();
+    verticalLoginPanel.addStyleName("vertical-login-panel");
+    mostMainPanel.add(verticalLoginPanel);
+    mostMainPanel.add(mainPanel);
 
     mainPanel.add(sessionsPanel);
 
@@ -142,9 +153,7 @@ public class MainPanel extends Composite {
 
     final Timer updateTotalSumTimer = createTotalSumTimer(sessionsPanel);
 
-    verticalLoginPanel = new VerticalPanel();
-
-    addInfoPanel.add(verticalLoginPanel);
+//    mainPanel.add(verticalLoginPanel);
 
 
     mainPanel.setWidth("100%");
@@ -171,7 +180,7 @@ public class MainPanel extends Composite {
     verticalLoginPanel.add(passwordInput);
 
     loginButton = new Button("Войти");
-    loginButton.addStyleName("login-message");
+    loginButton.addStyleName("login-button-style");
     verticalLoginPanel.add(loginButton);
 
     loginButton.addClickHandler(new ClickHandler() {
@@ -188,9 +197,9 @@ public class MainPanel extends Composite {
         logoutButton.setVisible(true);
         addClientSessionButton.setVisible(true);
         verticalLoginPanel.setVisible(false);
-        mainPanel.setVisible(false);
         mainPanel.setVisible(true);
         datesPanel.setVisible(true);
+        isShowAcceptedCheckbox.setVisible(true);
 
         logoutButton.setText("Выход пользователя " + " " + userNameInput.getValue());
 
@@ -244,27 +253,32 @@ public class MainPanel extends Composite {
       }
     });
     isShowAcceptedCheckbox.addStyleName("is-show-as-accepted-style");
-    mainPanel.add(isShowAcceptedCheckbox);
+    isShowAcceptedCheckbox.setVisible(false);
+    HorizontalPanel bottomPanel = new HorizontalPanel();
+    bottomPanel.addStyleName("bottom-panel");
+    bottomPanel.add(isShowAcceptedCheckbox);
+    bottomPanel.add(logoutButton);
+    mainPanel.add(bottomPanel);
 
   }
 
   public void createLogoutButton(HorizontalPanel addInfoPanel, final Timer updateTotalSumTimer) {
     logoutButton = new Button("Выход");
     logoutButton.addStyleName("logout-button-style");
-    addInfoPanel.add(logoutButton);
+//    addInfoPanel.add(logoutButton);
     logoutButton.addClickHandler(new ClickHandler() {
       public void onClick(ClickEvent event) {
 //       MainPanel.this.setVisible(false);
         verticalLoginPanel.setVisible(true);
-        verticalLoginPanel.addStyleName("vertical-login-panel");
         addClientSessionButton.setVisible(false);
         sessionsPanel.setVisible(false);
         logoutButton.setVisible(false);
         totalSumLabel.setVisible(false);
         userNameInput.setValue("");
-        updateTotalSumTimer.cancel();
+//        updateTotalSumTimer.cancel();
         datesPanel.setVisible(false);
-
+        isShowAcceptedCheckbox.setVisible(false);
+        mainPanel.setVisible(false);
       }
     });
   }

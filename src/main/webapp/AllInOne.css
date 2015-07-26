@@ -132,7 +132,7 @@ div.text-color-red textarea{
     border-radius: 8%;
     font-size: 33px !important;
     height: 76px;
-    margin: 20px 20px 20px 555px !important;
+    margin: 20px 20px 20px 355px !important;
     width: 333px;
 }
 
@@ -211,7 +211,7 @@ div.text-color-red textarea{
     background-color: #FFA500;
     border: 1px solid;
     border-radius: 10%;
-    font-size: 15px;
+    font-size: 20px;
     padding: 5px;
     margin-left: 10px !important;
     margin-right: 10px !important;
@@ -257,7 +257,7 @@ body {
     background-color: #FFA500;
     border: 1px solid;
     border-radius: 10%;
-    font-size: 15px;
+    font-size: 20px;
     padding: 5px;
     margin-left: 10px !important;
     margin-right: 10px !important;
@@ -270,19 +270,30 @@ body {
 .logout-button-style {
     margin: 10px !important;
     color: blue !important;
-
 }
 
-.vertical-login-panel td{
+.button-style {
+    margin: 10px !important;
+    color: black !important;
+}
+
+.login-button-style {
+    margin: 10px !important;
+    color: black !important;
+    width: 160px;
+}
+
+.vertical-login-panel{
     width: 100%;
     text-align: center;
+    padding-left: 570px;
+    padding-top: 170px;
+    background-color: #FFE4B5;
 }
 
-
-
 .login-message {
-    text-align: center;
-    color: #ffffff;
+    color: #000000;
+    padding-left: 22px;
 }
 
 .login-input {
@@ -307,10 +318,11 @@ body {
 }
 
 .total-sum-style {
-    color: #F5FFFA;
+    color: blue;
     font-size: 30px;
     text-align: center;
     text-decoration: underline;
+    margin-right: 400px;
 }
 
 .disabled-style {
@@ -318,7 +330,24 @@ body {
 }
 
 .is-show-as-accepted-style label {
-    color: #ffe5ec;
+    color: blue;
     font-size: 16px;
     margin: 10px;
+}
+
+.main-panel {
+    width: 100%;
+}
+
+.bottom-panel {
+    width: 100%;
+    margin: 50px;
+}
+
+body {
+    background-color: #FFE4B5 !important;
+}
+
+.default-color {
+    background-color: #FFE4B5;
 }

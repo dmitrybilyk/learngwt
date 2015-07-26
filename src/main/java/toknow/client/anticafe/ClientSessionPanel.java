@@ -107,7 +107,7 @@ public class ClientSessionPanel extends Composite {
     mainPanel.addStyleName("session-panel");
 
 
-    createWhoseBox();
+    createWhoseListBox();
     mainPanel.add(whoseBox);
 
     createClientNameLabel();
@@ -384,7 +384,7 @@ public class ClientSessionPanel extends Composite {
     clientNameLabel.addStyleName("name-label");
   }
 
-  public void createWhoseBox() {
+  public void createWhoseListBox() {
     whoseBox = new ListBox();
     whoseBox.setWidth("35px");
     whoseBox.addStyleName("custom-input");
@@ -408,6 +408,7 @@ public class ClientSessionPanel extends Composite {
                   }
 
                   public void onSuccess(Void result) {
+                    ClientSessionPanel.this.setProperOwner();
                     System.out.println("client is updated");
                   }
                 });
@@ -472,7 +473,7 @@ public class ClientSessionPanel extends Composite {
     toggleStartStopButtonsAvailability();
   }
 
-  private void updateTotalSum() {
+  public void updateTotalSum() {
     currentTimeValue = System.currentTimeMillis() - this.startTime;
     totalTimeValue.setText(getMinutesString(currentTimeValue));
     long currentIntervalSeconds = getSeconds(currentTimeValue);
